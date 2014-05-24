@@ -1,0 +1,382 @@
+Frame = require './frame.coffee'
+IO = require './io.coffee'
+Readline = require 'readline'
+readline = Readline.createInterface input: process.stdin, output: process.stdout
+
+# Frames provides the interface to access each frame
+# in the AVI file.
+# It is implemented as Enumerable. You can access this object
+# through AviGlitch#frames, for example:
+#
+#   avi = AviGlitch.new '/path/to/your.avi'
+#   frames = avi.frames
+#   frames.each do |frame|
+#     ## frame is a reference of an AviGlitch::Frame object
+#     frame.data = frame.data.gsub(/\d/, '0')
+#   end
+#
+# In the block passed into iteration method, the parameter is a reference
+# of AviGlitch::Frame object.
+#
+class Frames
+    #include Enumerable
+
+    SAFE_FRAMES_COUNT = 150000
+    @warn_if_frames_are_too_large = true
+
+    # attr_reader :meta
+
+    ##
+    # Creates a new AviGlitch::Frames object.
+    constructor: (@io) ->
+        @io.seek 12    # /^RIFF[\s\S]{4}AVI $/
+        while @io.read(4).match(/^(?:LIST|JUNK)$/)
+            s = @io.read(4, 'V')
+            @pos_of_movi = @io.pos - 4 if @io.read(4) == 'movi'
+            @io.move(s - 4)
+
+        @pos_of_idx1 = @io.pos - 4 # here must be idx1
+        s = @io.read(4, 'V') + @io.pos
+
+        @meta = []
+        while chunk_id = @io.read(4)
+            break if @io.pos >= s
+            @meta.push
+                id:     chunk_id,
+                flag:   @io.read(4, 'V'),
+                offset: @io.read(4, 'V'),
+                size:   @io.read(4, 'V')
+
+        @fix_offsets_if_needed @io
+        unless @safe_frames_count @meta.length
+            @io.close()
+            exit()
+
+        @io.seek 0
+
+    ##
+    # Enumerates the frames.
+    # It returns Enumerator if a callback is not given.
+    each: (callback) ->
+        if callback?
+            temp = new IO 'frames'
+            @frames_data_as_buffer temp, callback
+            @overwrite temp
+        else
+            @enum_for 'each'
+
+    ##
+    # Returns the number of frames.
+    length: -> @meta.length
+    size: -> @meta.length
+
+    ##
+    # Returns the number of the specific +frame_type+.
+    size_of: (frame_type) ->
+        detection = "is_" + frame_type.toString().replace(/frames$/, "frame")
+        filtered = @meta.filter (m) ->
+            f = new Frame(null, m.id, m.flag)
+            f[detection]()
+        filtered.length
+
+    frames_data_as_buffer: (io_dst, callback) ->
+        io_dst = new IO 'temp' unless io_dst?
+        @meta = @meta.filter (m) =>
+            @io.seek @pos_of_movi + m.offset + 8   # 8 for id and size
+            frame = new Frame(@io.read(m.size), m.id, m.flag)
+            callback(frame) if callback?   # accept the variable callback
+            if frame.data?
+                m.offset = io_dst.pos + 4   # 4 for 'movi'
+                m.size = frame.data.length
+                m.flag = frame.flag
+                m.id = frame.id
+                io_dst.write m.id
+                io_dst.write frame.data.length, 'V'
+                io_dst.write frame.data
+                io_dst.write "\x00" if frame.data.length % 2 == 1
+                true
+            else
+                false
+        return io_dst
+
+    overwrite: (data) ->  #:nodoc:
+        unless @safe_frames_count @meta.length
+            @io.close()
+            exit()
+
+        # Overwrite the file
+        @io.seek @pos_of_movi - 4     # 4 for size
+        @io.write data.pos + 4, 'V'   # 4 for 'movi'
+        @io.write 'movi'
+
+        data.seek 0
+        while d = data.read(BUFFER_SIZE)
+            @io.write d
+
+        @io.write 'idx1'
+        @io.write @meta.length * 16, 'V'
+        idx = (@meta.filter (m) ->
+            m.id + pack('V3', [m.flag, m.offset, m.size])
+        ).join()
+        @io.write idx
+        eof = @io.pos
+        @io.truncate eof
+
+        # Fix info
+        ## file size
+        @io.seek 4
+        @io.write eof - 8, 'V'
+        ## frame count
+        @io.seek = 48
+        vid_frames = @meta.filter (m) ->
+            id = m.id
+            id.match /^..d[bc]$/
+
+        @io.write vid_frames.length, 'V'
+        return @io.pos
+
+
+    ##
+    # Removes all frames and returns self.
+    clear: ->
+        @meta = []
+        @overwrite new IO()
+        this
+
+    ##
+    # Appends the frames in the other Frames into the tail of self.
+    # It is destructive like Array does.
+    concat: (other_frames) ->
+        #raise TypeError unless other_frames.kind_of?(Frames)
+
+        # data
+        this_data = new IO 'this'
+        @frames_data_as_io this_data
+        other_data = new IO 'other'
+        other_frames.frames_data_as_io other_data
+        this_size = this_data.size()
+        this_data.seek this_size
+        other_data.seek 0
+        while d = other_data.read(BUFFER_SIZE)
+            this_data.write d
+        other_data.close()
+
+        # meta
+        other_meta = other_frames.meta.filter (m) ->
+            x =
+                offset: m.offset + this_size
+                size:   m.size
+                flag:   m.flag
+                id:     m.id
+            x
+        @meta = @meta.concat other_meta
+        # close
+        @overwrite this_data
+        this_data.close()
+
+    ##
+    # Returns a concatenation of the two Frames as a new Frames instance.
+    add: (other_frames) ->
+        r = @to_avi()
+        r.frames.concat other_frames
+        r.frames
+
+    # ##
+    # # Returns the new Frames as a +times+ times repeated concatenation
+    # # of the original Frames.
+    # mul: (times) ->
+    #     result = @slice 0, 0
+    #     frames = @slice 0..-1
+    #     for i in [0...times]
+    #         result.concat frames
+    #     result
+
+    ##
+    # Returns the Frame object at the given index or
+    # returns new Frames object that sliced with the given index and length
+    # or with the Range.
+    # Just like Array.
+    slice: ->
+        [head, length] = @get_head_and_length arguments
+        if length?
+            pos_tail = head + length
+            r = @to_avi()
+            r.frames.each_with_index (f, i) ->
+                unless head <= i && i < tail
+                    f.data = null
+            return r.frames
+        else
+            @at b
+
+
+    # ##
+    # # Alias for slice
+    # alias_method :[], :slice
+
+    ##
+    # Removes frame(s) at the given index or the range (same as slice).
+    # Returns the new Frames contains removed frames.
+    slice_save: ->
+        [head, length] = @get_head_and_length arguments
+        [header, sliced, footer] = []
+        sliced = if length? then @slice(head, length) else @slice(head)
+        head = @slice(0, head)
+        length = 1 unless length?
+        tail = @slice((head + length), -1)
+        @clear()
+        @concat header + footer
+        return sliced
+
+    # ##
+    # # Removes frame(s) at the given index or the range (same as []).
+    # # Inserts the given Frame or Frames's contents into the removed index.
+    # def []= *args
+    #     value = args.pop
+    #     b, l = get_head_and_length *args
+    #     ll = l.nil? ? 1 : l
+    #     head = self.slice(0, b)
+    #     rest = self.slice((b + ll)..-1)
+    #     if l.nil? || value.kind_of?(Frame)
+    #         head.push value
+    #     else if value.kind_of?(Frames)
+    #         head.concat value
+    #     else
+    #         raise TypeError
+    #     end
+    #     new_frames = head + rest
+
+    #     self.clear
+    #     self.concat new_frames
+    # end
+
+    ##
+    # Returns one Frame object at the given index.
+    at: (n) ->
+        m = @meta[n]
+        return null unless m?
+        @io.seek @pos_of_movi + m.offset + 8
+        frame = new Frame(@io.read(m.size), m.id, m.flag)
+        @io.seek 0
+        return frame
+
+    ##
+    # Returns the first Frame object.
+    first: -> @slice(0)
+
+    ##
+    # Returns the last Frame object.
+    last: -> @slice(@length() - 1)
+
+    ##
+    # Appends the given Frame into the tail of self.
+    push: (frame) ->
+        #raise TypeError unless frame.kind_of? Frame
+
+        # data
+        this_data = new IO 'this'
+        @frames_data_as_io this_data
+        this_size = this_data.size()
+        this_data.seek this_size
+        this_data.write frame.id
+        this_data.write frame.data.length, 'V'
+        this_data.write frame.data
+        this_data.write "\x00" if frame.data.length % 2 == 1
+
+        # meta
+        @meta.push
+            id:     frame.id,
+            flag:   frame.flag,
+            offset: this_size + 4, # 4 for 'movi'
+            size:   frame.data.length,
+
+        # close
+        @overwrite this_data
+        this_data.close()
+        return this
+
+    # ##
+    # # Alias for push
+    # alias_method :<<, :push
+
+    ##
+    # Inserts the given Frame objects into the given index.
+    insert: (n) ->
+        new_frames = @slice(0, n)
+        arguments.slice(1).each (f) ->
+            new_frames.push f
+        new_frames.concat @slice(n)
+
+        @clear()
+        @concat new_frames
+        return this
+
+    ##
+    # Deletes one Frame at the given index.
+    delete_at: (n) -> @slice_save n
+
+    ##
+    # Mutates keyframes into deltaframes at given range, or all.
+    mutate_keyframes_into_deltaframes: (range = nil) ->
+        range = [0...@size] unless range?
+        @each_with_index (frame, i) ->
+            if i in range and frame.is_keyframe()
+                frame.flag = 0
+
+    ##
+    # Returns true if +other+'s frames are same as self's frames.
+    equal: (other) ->
+        @meta == other.meta
+
+    ##
+    # Generates new AviGlitch::Base instance using self.
+    to_avi: ->
+      AviGlitch.open @io.path
+
+    inspect: ->
+        "#<#{self.class.name}:#{sprintf("0x%x", object_id)} @io=#{@io.inspect} size=#{self.size}>"
+
+    get_head_and_length: ->
+        [head, length] = arguments
+        if Array.isArray arguments[0]
+            [head, length] = arguments[0]
+
+        if length?
+            end = if length >= 0 then length else @meta.length + length
+            length = end - head + 1
+
+        head = if head >= 0 then head else @meta.length + head
+        [head, length]
+
+
+    safe_frames_count: (count) -> #:nodoc:
+        r = true
+        if Frames.warn_if_frames_are_too_large && count >= SAFE_FRAMES_COUNT
+            process.on 'SIGINT', ->
+                @io.close()
+                exit()
+            m = [ "WARNING: The avi data has too many frames (#{count}).\n",
+                  "It may use a large memory to process. ",
+                  "We recommend to chop the movie to smaller chunks before you glitch.\n",
+                  "Do you want to continue anyway? [yN] " ].join('')
+
+            readline.question m, (answer) ->
+                r = (answer == 'y')
+                Frames.warn_if_frames_are_too_large = !r
+                return r
+
+
+    fix_offsets_if_needed: (io) ->
+        # rarely data offsets begin from 0 of the file
+        return if @meta.length == 0
+        pos = @io.pos
+        m = @meta[0]
+        io.seek @pos_of_movi + m.offset
+        unless io.read(4) == m.id
+            x.offset -= @pos_of_movi for x in @meta.each
+        io.seek pos
+
+
+    # protected :frames_data_as_io, :meta
+    # private :overwrite, :get_head_and_length, :fix_offsets_if_needed
+
+module.exports = Frames
