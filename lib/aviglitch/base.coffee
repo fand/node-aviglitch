@@ -64,18 +64,22 @@ class Base
     # With a block it returns Enumerator, without a block it returns +self+.
     glitch: (target = 'all', callback) ->
         return null unless callback?
-        for frame in @frames
+        @frames.each (frame) =>
             if @valid_target target, frame
-                frame.data = callback frame.data
+                frame.data = callback frame
+            else
+                frame.data
         return this
 
     ##
     # Do glitch with index.
     glitch_with_index: (target = 'all', callback) ->
-        return null unless calback?
-        for frame, i of @frames
+        return null unless callback?
+        @frames.each_with_index (frame, i) =>
             if @valid_target target, frame
-                frame.data = callback frame.data, i
+                callback frame, i
+            else
+                frame.data
         return this
 
     ##
@@ -114,7 +118,7 @@ class Base
     valid_target: (target, frame) -> #:nodoc:
         return true if target == 'all'
         try
-            frame.send "is_#{target.to_s.sub(/frames$/, 'frame')}?"
+            frame["is_#{target.toString().replace(/frames$/, 'frame')}"]()
         finally
             false
 

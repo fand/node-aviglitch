@@ -47,20 +47,14 @@ else
 
 a = AviGlitch.open input.shift()
 
-console.log 'opened'
-
 unless fake
-    a.glitch_with_index 'keyframe', (frame_data, i) ->
-        if (!all && i == 0) then frame_data else new Buffer() # keep the first frame
+    a.glitch_with_index 'keyframe', (frame, i) ->
+        if (!all && i == 0) then frame.data else undefined # keep the first frame
 
-console.log 'glitched'
-
-if !all && !fake
-    a.mutate_keyframes_into_deltaframes([1...a.frames.length])
-else
-    a.mutate_keyframes_into_deltaframes()
-
-console.log 'imitated'
+# if !all && !fake
+#     a.mutate_keyframes_into_deltaframes([1...a.frames.length])
+# else
+#     a.mutate_keyframes_into_deltaframes()
 
 # input.each do |file|
 #   b = AviGlitch.open file

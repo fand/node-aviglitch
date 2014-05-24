@@ -92,10 +92,12 @@ class Frames
 
     frames_data_as_io: (io_dst, callback) ->
         io_dst = new IO 'temp' unless io_dst?
+        ct = 0
+        cf = 0
         @meta = @meta.filter (m, i) =>
             @io.seek @pos_of_movi + m.offset + 8   # 8 for id and size
             frame = new Frame(@io.read(m.size), m.id, m.flag)
-            callback(frame, i) if callback?   # accept the variable callback
+            frame.data = callback(frame, i) if callback?   # accept the variable callback
             if frame.data?
                 m.offset = io_dst.pos + 4   # 4 for 'movi'
                 m.size = frame.data.length
@@ -105,9 +107,13 @@ class Frames
                 io_dst.write frame.data.length, 'V'
                 io_dst.write frame.data
                 io_dst.write "\x00", 'a' if frame.data.length % 2 == 1
+                ct++
                 true
             else
+                cf++
                 false
+        console.log 'ct: ' + ct
+        console.log 'cf: ' + cf
         return io_dst
 
     overwrite: (data) ->  #:nodoc:
