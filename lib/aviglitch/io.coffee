@@ -2,11 +2,16 @@ fs = require 'fs'
 
 class IO
     read_formats =
-        V: 'readUInt32LE'
-        a: 'toString'
+        V: (buf) -> buf.readUInt32LE(0)
+        a: (buf) -> buf.toString()
 
     write_formats =
-        V: 'writeUInt32LE'
+        a: (buf, data) -> buf.write(data)
+        V: (buf, data) -> buf.writeUInt32LE(data, 0)
+
+    size_formats =
+        a: 1
+        V: 4
 
     constructor: (@path, flags, @pos = 0, cb) ->
         @is_io = true
@@ -23,34 +28,41 @@ class IO
         if @pos + size > @size()
             size = @size() - @pos
         if size <= 0
-            return false
+            return undefined
 
         buf = new Buffer size
         @pos += fs.readSync(@fd, buf, 0, size, @pos)
 
         if format?
-            return buf[IO.read_formats[format]]()
+            return read_formats[format](buf)
         else
             return buf
 
     write: (data, format) ->
-
         if format?
-            size = Buffer.byteLength data
-            buf = new Buffer size
-
-            buf[IO.write_formats[format]](data)
+#            console.log data
+            buf = new Buffer size_formats[format]
+            write_formats[format](buf, data)
         else
             buf = data
             size = buf.length
-
+        console.log data if !Buffer.isBuffer(data) and !format?
         @pos += fs.writeSync @fd, buf, 0, buf.length, @pos
 
-    close: (cb) ->
-        fs.close @fd, -> cb() if cb?
+    close: (callback) ->
+        fs.close @fd, -> callback() if callback?
 
     truncate: (size) ->
         fs.ftruncateSync @fd, size
 
+    ##
+    # Pack data to a binary string.
+    @pack = (format, data) ->
+        bufs = []
+        for i, f of format
+            buf = new Buffer size_formats[f]
+            write_formats[f](buf, data[i])
+            bufs.push buf
+        return Buffer.concat bufs
 
 module.exports = IO

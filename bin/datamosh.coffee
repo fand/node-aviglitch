@@ -5,7 +5,7 @@ fs = require 'fs'
 argv = require('optimist').argv
 AviGlitch = require '../lib/aviglitch'
 
-output = './out.avi'
+output = './coffee.avi'
 all = false
 fake = false
 
@@ -46,11 +46,21 @@ else
             process.exit 1
 
 a = AviGlitch.open input.shift()
-unless fake
-    a.glitch_with_index 'keyframe', (frame, i) ->
-        if (!all && i == 0) then frame else "" # keep the first frame
 
-a.mutate_keyframes_into_deltaframes(if !all && !fake then [1..a.frames.length] else nil)
+console.log 'opened'
+
+unless fake
+    a.glitch_with_index 'keyframe', (frame_data, i) ->
+        if (!all && i == 0) then frame_data else new Buffer() # keep the first frame
+
+console.log 'glitched'
+
+if !all && !fake
+    a.mutate_keyframes_into_deltaframes([1...a.frames.length])
+else
+    a.mutate_keyframes_into_deltaframes()
+
+console.log 'imitated'
 
 # input.each do |file|
 #   b = AviGlitch.open file
@@ -64,3 +74,4 @@ a.mutate_keyframes_into_deltaframes(if !all && !fake then [1..a.frames.length] e
 # end
 
 a.output output
+process.exit()

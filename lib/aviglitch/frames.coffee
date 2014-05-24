@@ -33,16 +33,16 @@ class Frames
         @is_frames = true
 
         @io.seek 12    # /^RIFF[\s\S]{4}AVI $/
-        while @io.read(4).match(/^(?:LIST|JUNK)$/)
+        while @io.read(4, 'a').match(/^(?:LIST|JUNK)$/)
             s = @io.read(4, 'V')
-            @pos_of_movi = @io.pos - 4 if @io.read(4) == 'movi'
+            @pos_of_movi = @io.pos - 4 if @io.read(4, 'a') == 'movi'
             @io.move(s - 4)
 
         @pos_of_idx1 = @io.pos - 4 # here must be idx1
         s = @io.read(4, 'V') + @io.pos
 
         @meta = []
-        while chunk_id = @io.read(4)
+        while chunk_id = @io.read(4, 'a')
             break if @io.pos >= s
             @meta.push
                 id:     chunk_id,
@@ -51,9 +51,10 @@ class Frames
                 size:   @io.read(4, 'V')
 
         @fix_offsets_if_needed @io
+
         unless @safe_frames_count @meta.length
             @io.close()
-            exit()
+            process.exit()
 
         @io.seek 0
 
@@ -61,12 +62,19 @@ class Frames
     # Enumerates the frames.
     # It returns Enumerator if a callback is not given.
     each: (callback) ->
-        if callback?
-            temp = new IO 'frames'
-            @frames_data_as_buffer temp, callback
-            @overwrite temp
-        else
-            @enum_for 'each'
+        return null unless callback?
+        temp = new IO 'frames'
+        @frames_data_as_io temp, callback
+        @overwrite temp
+
+    ##
+    # Enumerates the frames.
+    # It returns Enumerator if a callback is not given.
+    each_with_index: (callback) ->
+        return null unless callback?
+        temp = new IO 'frames'
+        @frames_data_as_io temp, callback
+        @overwrite temp
 
     ##
     # Returns the number of frames.
@@ -82,21 +90,21 @@ class Frames
             f[detection]()
         filtered.length
 
-    frames_data_as_buffer: (io_dst, callback) ->
+    frames_data_as_io: (io_dst, callback) ->
         io_dst = new IO 'temp' unless io_dst?
-        @meta = @meta.filter (m) =>
+        @meta = @meta.filter (m, i) =>
             @io.seek @pos_of_movi + m.offset + 8   # 8 for id and size
             frame = new Frame(@io.read(m.size), m.id, m.flag)
-            callback(frame) if callback?   # accept the variable callback
+            callback(frame, i) if callback?   # accept the variable callback
             if frame.data?
                 m.offset = io_dst.pos + 4   # 4 for 'movi'
                 m.size = frame.data.length
                 m.flag = frame.flag
                 m.id = frame.id
-                io_dst.write m.id
+                io_dst.write m.id, 'a'
                 io_dst.write frame.data.length, 'V'
                 io_dst.write frame.data
-                io_dst.write "\x00" if frame.data.length % 2 == 1
+                io_dst.write "\x00", 'a' if frame.data.length % 2 == 1
                 true
             else
                 false
@@ -109,19 +117,20 @@ class Frames
 
         # Overwrite the file
         @io.seek @pos_of_movi - 4     # 4 for size
-        @io.write data.pos + 4, 'V'   # 4 for 'movi'
-        @io.write 'movi'
+        @io.write data.size() + 4, 'V'   # 4 for 'movi'
+        @io.write 'movi', 'a'
 
         data.seek 0
         while d = data.read(BUFFER_SIZE)
             @io.write d
 
-        @io.write 'idx1'
+        @io.write 'idx1', 'a'
         @io.write @meta.length * 16, 'V'
-        idx = (@meta.filter (m) ->
-            m.id + pack('V3', [m.flag, m.offset, m.size])
-        ).join()
-        @io.write idx
+        idxs = []
+        for m in @meta
+            idxs.push new Buffer(m.id)
+            idxs.push IO.pack('VVV', [m.flag, m.offset, m.size])
+        @io.write Buffer.concat idxs
         eof = @io.pos
         @io.truncate eof
 
@@ -320,7 +329,7 @@ class Frames
     ##
     # Mutates keyframes into deltaframes at given range, or all.
     mutate_keyframes_into_deltaframes: (range = nil) ->
-        range = [0...@size] unless range?
+        range = [0...@size()] unless range?
         @each_with_index (frame, i) ->
             if i in range and frame.is_keyframe()
                 frame.flag = 0
@@ -356,7 +365,7 @@ class Frames
         if Frames.warn_if_frames_are_too_large && count >= SAFE_FRAMES_COUNT
             process.on 'SIGINT', ->
                 @io.close()
-                exit()
+                process.exit()
             m = [ "WARNING: The avi data has too many frames (#{count}).\n",
                   "It may use a large memory to process. ",
                   "We recommend to chop the movie to smaller chunks before you glitch.\n",
@@ -366,6 +375,7 @@ class Frames
                 r = (answer == 'y')
                 Frames.warn_if_frames_are_too_large = !r
                 return r
+        return r
 
 
     fix_offsets_if_needed: (io) ->
@@ -374,7 +384,7 @@ class Frames
         pos = @io.pos
         m = @meta[0]
         io.seek @pos_of_movi + m.offset
-        unless io.read(4) == m.id
+        unless io.read(4, 'a') == m.id
             x.offset -= @pos_of_movi for x in @meta.each
         io.seek pos
 

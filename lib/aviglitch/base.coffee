@@ -1,4 +1,6 @@
+fs = require 'fs-extra'
 IO = require './io'
+Frames = require './frames'
 
 # Base is the object that provides interfaces mainly used.
 # To glitch, and save file. The instance is returned through AviGlitch#open.
@@ -34,14 +36,16 @@ class Base
 
     ##
     # Outputs the glitched file to +path+, and close the file.
-    output: (path, do_file_close = true) ->
-        fs.createReadStream(@file.path).pipe(fs.craeteWriteStream(path))
+    output: (dst, do_file_close = true) ->
+        src = @file.path
+        fs.copySync src, dst
+        console.log 'copied'
         @close() if do_file_close
         return this
 
     ##
     # An explicit file close.
-    close: -> @file.close()
+    close: (callback) -> @file.close(callback)
 
     ##
     # Glitches each frame data.
@@ -127,22 +131,25 @@ class Base
             file.seek file.size()
             eof = file.pos
             file.seek 0
-            unless file.read(4) == 'RIFF'
+
+            unless file.read(4, 'a') == 'RIFF'
                 answer = false
                 console.error 'RIFF sign is not found' if debug
 
             len = file.read(4, 'V')
-            unless file.read(4) == 'AVI '
+
+            unless file.read(4, 'a') == 'AVI '
                 answer = false
                 console.error 'AVI sign is not found' if debug
 
-            while file.read(4).match /^(?:LIST|JUNK)$/
+            while file.read(4, 'a').match /^(?:LIST|JUNK)$/
                 s = file.read(4, 'V')
                 file.move s
 
             file.move -4
+
             # we require idx1
-            unless file.read(4) == 'idx1'
+            unless file.read(4, 'a') == 'idx1'
                 answer = false
                 console.error 'idx1 is not found' if debug
 
@@ -150,7 +157,8 @@ class Base
             file.move s
 
         catch err
-            warn err.message if debug
+            console.log err
+            console.error err.message if debug
             answer = false
         finally
             file.close() unless is_io

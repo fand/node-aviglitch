@@ -27,7 +27,7 @@ class Frame
     ##
     # Returns if it is a video frame and also a key frame.
     is_keyframe: ->
-      @is_videoframe() && @flag & AVIIF_KEYFRAME != 0
+      @is_videoframe() && !!@flag & AVIIF_KEYFRAME != 0
 
     ##
     # Alias for is_keyframe?
@@ -36,7 +36,7 @@ class Frame
     ##
     # Returns if it is a video frame and also not a key frame.
     is_deltaframe: ->
-      @is_videoframe() && @flag & AVIIF_KEYFRAME == 0
+      @is_videoframe() && !!@flag & AVIIF_KEYFRAME == 0
 
     ##
     # Alias for is_deltaframe?
