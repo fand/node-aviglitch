@@ -8,6 +8,7 @@ class IO
         V: 'writeUInt32LE'
 
     constructor: (@path, @pos = 0, cb) ->
+        @is_io = true
         @fd = fs.openSync @path, 'w+'
 
     size: -> fs.fstatSync(@fd)["size"]
@@ -26,7 +27,7 @@ class IO
             return buf.toString()
 
     write: (data, format) ->
-        size = buf.length
+        size = Buffer.byteLength data
         buf = new Buffer size
 
         if format?

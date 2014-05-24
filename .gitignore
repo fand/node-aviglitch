@@ -8,3 +8,5 @@ tmp
 *.gem
 Gemfile.lock
 Guardfile
+*.rb
+node_modules/
