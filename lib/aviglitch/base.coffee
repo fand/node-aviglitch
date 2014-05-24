@@ -9,13 +9,14 @@ class Base
     # attr_reader :frames
     # # The input file (copied tempfile).
     # attr_reader :file
+    BUFFER_SIZE = 2 ** 20
 
     ##
     # Creates a new instance of AviGlitch::Base, open the file and
     # make it ready to manipulate.
     # It requires +path+ as Pathname.
-    constructor: (path, BUFFER_SIZE) ->
-        f = new IO path
+    constructor: (path) ->
+        f = new IO path, 'r'
 
         # copy as tempfile
         @file = new IO 'aviglitch'

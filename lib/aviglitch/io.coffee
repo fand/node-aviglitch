@@ -3,39 +3,48 @@ fs = require 'fs'
 class IO
     read_formats =
         V: 'readUInt32LE'
+        a: 'toString'
 
     write_formats =
         V: 'writeUInt32LE'
 
-    constructor: (@path, @pos = 0, cb) ->
+    constructor: (@path, flags, @pos = 0, cb) ->
         @is_io = true
-        @fd = fs.openSync @path, 'w+'
+        flags = if flags? then flags else 'w+'
+        @fd = fs.openSync @path, flags
 
     size: -> fs.fstatSync(@fd)["size"]
     seek: (@pos) -> @pos
     seedEnd: -> @seek @size()
     move: (d) -> @pos += d
 
-
     read: (size, format) ->
+
+        if @pos + size > @size()
+            size = @size() - @pos
+        if size <= 0
+            return false
+
         buf = new Buffer size
         @pos += fs.readSync(@fd, buf, 0, size, @pos)
 
         if format?
             return buf[IO.read_formats[format]]()
         else
-            return buf.toString()
+            return buf
 
     write: (data, format) ->
-        size = Buffer.byteLength data
-        buf = new Buffer size
 
         if format?
+            size = Buffer.byteLength data
+            buf = new Buffer size
+
             buf[IO.write_formats[format]](data)
         else
-            buf.write data
+            buf = data
+            size = buf.length
 
-        @pos += fs.writeSync @fd, buf, 0, size, @pos
+        @pos += fs.writeSync @fd, buf, 0, buf.length, @pos
 
     close: (cb) ->
         fs.close @fd, -> cb() if cb?
