@@ -14,7 +14,7 @@ class Base
     # Creates a new instance of AviGlitch::Base, open the file and
     # make it ready to manipulate.
     # It requires +path+ as Pathname.
-    constructor: (path) ->
+    constructor: (path, BUFFER_SIZE) ->
         f = new IO path
 
         # copy as tempfile
@@ -155,3 +155,6 @@ class Base
             file.close() unless is_io
 
         return answer
+
+
+module.exports = Base

@@ -19,6 +19,7 @@ class Frame
     # [+flag+] flag that describes the chunk type (taken from idx1)
     #
     constructor: (data, id, flag) ->
+        @is_frame = true
         @data = data
         @id = id
         @flag = flag

@@ -21,6 +21,7 @@ readline = Readline.createInterface input: process.stdin, output: process.stdout
 class Frames
     #include Enumerable
 
+    BUFFER_SIZE = 2 ** 24
     SAFE_FRAMES_COUNT = 150000
     @warn_if_frames_are_too_large = true
 
@@ -29,6 +30,8 @@ class Frames
     ##
     # Creates a new AviGlitch::Frames object.
     constructor: (@io) ->
+        @is_frames = true
+
         @io.seek 12    # /^RIFF[\s\S]{4}AVI $/
         while @io.read(4).match(/^(?:LIST|JUNK)$/)
             s = @io.read(4, 'V')
@@ -378,5 +381,6 @@ class Frames
 
     # protected :frames_data_as_io, :meta
     # private :overwrite, :get_head_and_length, :fix_offsets_if_needed
+
 
 module.exports = Frames
