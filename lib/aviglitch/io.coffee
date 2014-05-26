@@ -28,7 +28,8 @@ class IO
         if @pos + size > @size()
             size = @size() - @pos
         if size <= 0
-            return undefined
+            return new Buffer(0)
+#            return undefined
 
         buf = new Buffer size
         @pos += fs.readSync(@fd, buf, 0, size, @pos)
@@ -38,10 +39,9 @@ class IO
         else
             return buf
 
-    write: (data, format) ->
+    write: (data, format, num_data = 1) ->
         if format?
-#            console.log data
-            buf = new Buffer size_formats[format]
+            buf = new Buffer size_formats[format] * num_data
             write_formats[format](buf, data)
         else
             buf = data

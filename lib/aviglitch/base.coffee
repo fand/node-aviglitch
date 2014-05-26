@@ -22,8 +22,10 @@ class Base
 
         # copy as tempfile
         @file = new IO 'aviglitch'
-        while d = f.read(BUFFER_SIZE)
+        d = f.read(BUFFER_SIZE)
+        while d.length > 0
             @file.write d
+            d = f.read(BUFFER_SIZE)
 
         f.close()
 
@@ -39,9 +41,12 @@ class Base
     output: (dst, do_file_close = true) ->
         src = @file.path
         fs.copySync src, dst
-        console.log 'copied'
         @close() if do_file_close
         return this
+
+    # alias_method :write, :output
+    write: -> @output(arguments)
+
 
     ##
     # An explicit file close.
@@ -75,11 +80,15 @@ class Base
     # Do glitch with index.
     glitch_with_index: (target = 'all', callback) ->
         return null unless callback?
-        @frames.each_with_index (frame, i) =>
+        i = 0
+        @frames.each (frame) =>
             if @valid_target target, frame
-                callback frame, i
+                frame.data = callback frame, i
+                i++
+                frame.data
             else
                 frame.data
+
         return this
 
     ##
@@ -99,6 +108,9 @@ class Base
                 break
         return result
 
+    # alias_method :has_keyframes, :has_keyframe
+    has_keyframes: -> @has_keyframe()
+
     ##
     # Removes all keyframes.
     # It is same as +glitch(:keyframes){|f| nil }+
@@ -111,9 +123,6 @@ class Base
 #        raise TypeError unless other.kind_of?(Frames)
         @frames.clear()
         @frames.concat other
-
-    # alias_method :write, :output
-    # alias_method :has_keyframes?, :has_keyframe?
 
     valid_target: (target, frame) -> #:nodoc:
         return true if target == 'all'
@@ -161,7 +170,6 @@ class Base
             file.move s
 
         catch err
-            console.log err
             console.error err.message if debug
             answer = false
         finally

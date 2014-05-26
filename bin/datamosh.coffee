@@ -48,8 +48,13 @@ else
 a = AviGlitch.open input.shift()
 
 unless fake
+    frames = 0
     a.glitch_with_index 'keyframe', (frame, i) ->
-        if (!all && i == 0) then frame.data else undefined # keep the first frame
+        frames++
+        if (not all) and i == 0
+            frame.data
+        else
+            new Buffer(0) # keep the first frame
 
 # if !all && !fake
 #     a.mutate_keyframes_into_deltaframes([1...a.frames.length])

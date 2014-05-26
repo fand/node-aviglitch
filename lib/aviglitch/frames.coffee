@@ -8,18 +8,16 @@ readline = Readline.createInterface input: process.stdin, output: process.stdout
 # It is implemented as Enumerable. You can access this object
 # through AviGlitch#frames, for example:
 #
-#   avi = AviGlitch.new '/path/to/your.avi'
+#   avi = new AviGlitch '/path/to/your.avi'
 #   frames = avi.frames
-#   frames.each do |frame|
-#     ## frame is a reference of an AviGlitch::Frame object
-#     frame.data = frame.data.gsub(/\d/, '0')
-#   end
+#   frames.each (frame) ->
+#       ## frame is a reference of an AviGlitch::Frame object
+#       frame.data = frame.data.replace(/\d/, '0')
 #
 # In the block passed into iteration method, the parameter is a reference
 # of AviGlitch::Frame object.
 #
 class Frames
-    #include Enumerable
 
     BUFFER_SIZE = 2 ** 24
     SAFE_FRAMES_COUNT = 150000
@@ -42,13 +40,16 @@ class Frames
         s = @io.read(4, 'V') + @io.pos
 
         @meta = []
-        while chunk_id = @io.read(4, 'a')
+        chunk_id = @io.read(4, 'a')
+        while chunk_id.length? and chunk_id.length > 0
             break if @io.pos >= s
             @meta.push
                 id:     chunk_id,
                 flag:   @io.read(4, 'V'),
                 offset: @io.read(4, 'V'),
                 size:   @io.read(4, 'V')
+
+            chunk_id = @io.read(4, 'a')
 
         @fix_offsets_if_needed @io
 
@@ -68,15 +69,6 @@ class Frames
         @overwrite temp
 
     ##
-    # Enumerates the frames.
-    # It returns Enumerator if a callback is not given.
-    each_with_index: (callback) ->
-        return null unless callback?
-        temp = new IO 'frames'
-        @frames_data_as_io temp, callback
-        @overwrite temp
-
-    ##
     # Returns the number of frames.
     length: -> @meta.length
     size: -> @meta.length
@@ -86,51 +78,48 @@ class Frames
     size_of: (frame_type) ->
         detection = "is_" + frame_type.toString().replace(/frames$/, "frame")
         filtered = @meta.filter (m) ->
-            f = new Frame(null, m.id, m.flag)
+            f = new Frame(new Buffer(), m.id, m.flag)
             f[detection]()
         filtered.length
 
     frames_data_as_io: (io_dst, callback) ->
         io_dst = new IO 'temp' unless io_dst?
-        ct = 0
-        cf = 0
         @meta = @meta.filter (m, i) =>
             @io.seek @pos_of_movi + m.offset + 8   # 8 for id and size
             frame = new Frame(@io.read(m.size), m.id, m.flag)
             frame.data = callback(frame, i) if callback?   # accept the variable callback
             if frame.data?
+                if (not Buffer.isBuffer(frame.data)) and frame.data == null
+                    return false
                 m.offset = io_dst.pos + 4   # 4 for 'movi'
                 m.size = frame.data.length
                 m.flag = frame.flag
                 m.id = frame.id
-                io_dst.write m.id, 'a'
+                io_dst.write m.id, 'a', 4
                 io_dst.write frame.data.length, 'V'
                 io_dst.write frame.data
-                io_dst.write "\x00", 'a' if frame.data.length % 2 == 1
-                ct++
-                true
+                io_dst.write "\x00", 'a', 1 if frame.data.length % 2 == 1
+                return true
             else
-                cf++
-                false
-        console.log 'ct: ' + ct
-        console.log 'cf: ' + cf
+                return false
         return io_dst
 
     overwrite: (data) ->  #:nodoc:
         unless @safe_frames_count @meta.length
             @io.close()
-            exit()
+            process.exit()
 
         # Overwrite the file
-        @io.seek @pos_of_movi - 4     # 4 for size
+        @io.seek @pos_of_movi - 4        # 4 for size
         @io.write data.size() + 4, 'V'   # 4 for 'movi'
-        @io.write 'movi', 'a'
-
+        @io.write 'movi', 'a', 4
         data.seek 0
-        while d = data.read(BUFFER_SIZE)
+        d = data.read(BUFFER_SIZE)
+        while Buffer.isBuffer(d) and d.length > 0
             @io.write d
+            d = data.read(BUFFER_SIZE)
 
-        @io.write 'idx1', 'a'
+        @io.write 'idx1', 'a', 4
         @io.write @meta.length * 16, 'V'
         idxs = []
         for m in @meta
@@ -144,15 +133,14 @@ class Frames
         ## file size
         @io.seek 4
         @io.write eof - 8, 'V'
+
         ## frame count
-        @io.seek = 48
+        @io.seek 48
         vid_frames = @meta.filter (m) ->
-            id = m.id
-            id.match /^..d[bc]$/
+            m.id.match /^..d[bc]$/
 
         @io.write vid_frames.length, 'V'
         return @io.pos
-
 
     ##
     # Removes all frames and returns self.
@@ -169,26 +157,33 @@ class Frames
 
         # data
         this_data = new IO 'this'
-        @frames_data_as_io this_data
         other_data = new IO 'other'
+
+        # Reconstruct idx data.
+        @frames_data_as_io this_data
         other_frames.frames_data_as_io other_data
+
+        # Write other_data after EOF of this_data.
         this_size = this_data.size()
         this_data.seek this_size
         other_data.seek 0
-        while d = other_data.read(BUFFER_SIZE)
+        d = other_data.read(BUFFER_SIZE)
+        while Buffer.isBuffer(d) and d.length > 0
             this_data.write d
+            d = other_data.read(BUFFER_SIZE)
         other_data.close()
 
-        # meta
+        # Concat meta.
         other_meta = other_frames.meta.filter (m) ->
             x =
                 offset: m.offset + this_size
                 size:   m.size
                 flag:   m.flag
                 id:     m.id
-            x
+            return x
         @meta = @meta.concat other_meta
-        # close
+
+        # Close.
         @overwrite this_data
         this_data.close()
 
@@ -226,11 +221,6 @@ class Frames
         else
             @at b
 
-
-    # ##
-    # # Alias for slice
-    # alias_method :[], :slice
-
     ##
     # Removes frame(s) at the given index or the range (same as slice).
     # Returns the new Frames contains removed frames.
@@ -244,28 +234,6 @@ class Frames
         @clear()
         @concat header + footer
         return sliced
-
-    # ##
-    # # Removes frame(s) at the given index or the range (same as []).
-    # # Inserts the given Frame or Frames's contents into the removed index.
-    # def []= *args
-    #     value = args.pop
-    #     b, l = get_head_and_length *args
-    #     ll = l.nil? ? 1 : l
-    #     head = self.slice(0, b)
-    #     rest = self.slice((b + ll)..-1)
-    #     if l.nil? || value.kind_of?(Frame)
-    #         head.push value
-    #     else if value.kind_of?(Frames)
-    #         head.concat value
-    #     else
-    #         raise TypeError
-    #     end
-    #     new_frames = head + rest
-
-    #     self.clear
-    #     self.concat new_frames
-    # end
 
     ##
     # Returns one Frame object at the given index.
@@ -311,10 +279,6 @@ class Frames
         @overwrite this_data
         this_data.close()
         return this
-
-    # ##
-    # # Alias for push
-    # alias_method :<<, :push
 
     ##
     # Inserts the given Frame objects into the given index.
@@ -366,7 +330,7 @@ class Frames
         [head, length]
 
 
-    safe_frames_count: (count) -> #:nodoc:
+    safe_frames_count: (count) ->
         r = true
         if Frames.warn_if_frames_are_too_large && count >= SAFE_FRAMES_COUNT
             process.on 'SIGINT', ->
