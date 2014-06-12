@@ -38,10 +38,13 @@ class Base
 
     ##
     # Outputs the glitched file to +path+, and close the file.
-    output: (dst, do_file_close = true) ->
+    output: (dst, do_file_close = true, callback) ->
         src = @file.path
         fs.copySync src, dst
-        @close() if do_file_close
+        if do_file_close
+            @close(callback)
+        else
+            callback() if callback?
         return this
 
     # alias_method :write, :output
@@ -71,7 +74,13 @@ class Base
         return null unless callback?
         @frames.each (frame) =>
             if @valid_target target, frame
-                frame.data = callback frame
+                # data = callback frame
+                # frame.data = if data? then data else new Buffer(0)
+                data = callback frame
+                if data? or data == null
+                    data
+                else
+                    frame.data
             else
                 frame.data
         return this
@@ -83,9 +92,12 @@ class Base
         i = 0
         @frames.each (frame) =>
             if @valid_target target, frame
-                frame.data = callback frame, i
+                data = callback frame, i
                 i++
-                frame.data
+                if data? or data == null
+                    data
+                else
+                    frame.data
             else
                 frame.data
 
@@ -139,7 +151,9 @@ class Base
     @surely_formatted = (file, debug = false) ->
         answer = true
         is_io = file.is_io?  # Probably IO.
-        file = new IO(file) unless is_io
+
+        file = new IO(file, 'r') unless is_io
+
         try
             file.seek file.size()
             eof = file.pos
@@ -170,7 +184,7 @@ class Base
             file.move s
 
         catch err
-            console.error err.message if debug
+            console.error 'ERROR: ' + err.message if debug
             answer = false
         finally
             file.close() unless is_io

@@ -30,7 +30,7 @@ IO     = require './aviglitch/io.coffee'
 
 class AviGlitch
 
-    VERSION = '0.1.4'
+    VERSION = '0.0.0'
 
     BUFFER_SIZE = 2 ** 24
 
@@ -49,6 +49,6 @@ module.exports = AviGlitch
     # Frame: Frame
     # Frames: Frames
     # IO: IO
-    # VERSION: 0.1.4
+    # VERSION: 0.0.0
     # BUFFER_SIZE = 2 ** 24
     # open:

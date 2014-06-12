@@ -1,6 +1,5 @@
-expect = require 'mocha'
-assert = require('chai').assert
-
+mocha = require 'mocha'
+assert = require 'assert'
 
 fs = require 'fs'
 path = require 'path'
@@ -8,75 +7,79 @@ path = require 'path'
 FILES_DIR = path.join __dirname, 'files'
 OUTPUT_DIR = path.join FILES_DIR, 'output'
 
-Base = require 'AviGlitch/base'
-Frames = require 'AviGlitch/frames'
+AviGlitch = require 'lib/aviglitch'
+Base = require 'lib/aviglitch/base'
+Frames = require 'lib/aviglitch/frames'
 
 
 describe 'Frames', ->
 
     before ->
-        Frames.class_eval ->
-            define_method 'get_real_id_with', (frame) ->
-                pos = @io.pos
-                @io.pos -= frame.data.length
-                @io.pos -= 8
-                id = @io.read 4
-                @io.pos = pos
-                id
+        Frames.prototype.get_real_id_with = (frame) ->
+            pos = @io.pos
+            @io.pos -= frame.data.length
+            @io.pos -= 8
+            id = @io.read 4
+            @io.pos = pos
+            id
 
-        fs.mkDirSync OUTPUT_DIR unless File.existSync OUTPUT_DIR
+        fs.mkdirSync OUTPUT_DIR unless fs.existsSync OUTPUT_DIR
         @in = path.join FILES_DIR, 'sample.avi'
         @out = path.join OUTPUT_DIR, 'out.avi'
 
-    afterEach ->
+    afterEach (done) ->
         fs.readdir OUTPUT_DIR, (err, files) ->
             throw err if err
-            fs.unlink file for file in files
+            fs.unlinkSync path.join(OUTPUT_DIR, file) for file in files
+            done()
 
     after ->
-        fs.rmDirSync OUTPUT_DIR
+        fs.rmdirSync OUTPUT_DIR
 
     it 'should save the same file when nothing is changed', ->
         avi = AviGlitch.open @in
-        avi.frames.each -> null
+        avi.frames.each ->
         avi.output @out
         # FileUtils.cmp(@in, @out).should be true
+        assert fs.existsSync @out, 'out.avi exists'
         f_in = fs.readFileSync @in
         f_out = fs.readFileSync @out
-        assert.equal f_in, f_out
+        assert f_in?, 'in file exists'
+        assert f_out?, 'out file exists'
+        assert.deepEqual f_in, f_out, 'nothing changed'
 
-    it 'can manipulate each frame', ->
+    it 'can manipulate each frame', (done) ->
         avi = AviGlitch.open @in
-        f = avi.frames
-        f.should be_kind_of Enumerable
         avi.frames.each (f) ->
-            if f.is_keyframe
-                f.data = f.data.replace /\d/, '0'
-        avi.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+            if f.is_keyframe()
+                f.data = new Buffer(f.data.toString().replace /\d/, '0')
+        avi.output @out, true, =>
+            assert Base.surely_formatted(@out, true)
+            done()
 
-    it 'should remove a frame when returning nil', ->
+    it 'should remove a frame when returning null', ->
         avi = AviGlitch.open @in
-        in_frame_size = avi.frames.length
+        in_frame_size = avi.frames.length()
         rem_count = 0
-        avi.glitch 'keyframe' (kf) ->
+        avi.glitch 'keyframe', (kf) ->
             rem_count += 1
             null
-        avi.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+
+        avi.output @out, false, =>
+            assert Base.surely_formatted(@out, true)
 
         # frames length in the output file is correct
         avi = AviGlitch.open @out
-        out_frame_size = avi.frames.length
+        out_frame_size = avi.frames.length()
         assert.equal out_frame_size, in_frame_size - rem_count
 
-    it 'should read correct positions in #each', ->
-        avi = AviGlitch.open @in
-        frames = avi.frames
-        frames.each (f) ->
-            real_id = frames.get_real_id_with f
-            expect(real_id).to.eql f.id
-        avi.close()
+    # it 'should read correct positions in #each', ->
+    #     avi = AviGlitch.open @in
+    #     frames = avi.frames
+    #     frames.each (f) ->
+    #         real_id = frames.get_real_id_with f
+    #         assert real_id ==  f.id
+    #     avi.close()
 
     it 'should promise the read frame data is not nil', ->
         avi = AviGlitch.open @in
@@ -84,6 +87,8 @@ describe 'Frames', ->
         frames.each (f) ->
             f.data.should_not == null
         avi.close()
+
+    return
 
     it 'should hide the inner variables', ->
         avi = AviGlitch.open @in
@@ -182,7 +187,7 @@ describe 'Frames', ->
         asize = a.length
         c = (a.length / 3).floor
         spos = 3
-        range = spos..(spos + c)
+        range = [spos..(spos + c)]
         b = a.slice(range)
         #b.should be_kind_of AviGlitch::Frames
         assert.lengthOf b, c + 1
@@ -190,7 +195,7 @@ describe 'Frames', ->
             b.each (x) -> x
         )
 
-        range = spos..-1
+        range = [spos..-1]
         d = a.slice(range)
         # d.should be_kind_of AviGlitch::Frames
         assert.lengthOf d, asize - spos
@@ -199,7 +204,7 @@ describe 'Frames', ->
         )
 
         x = -5
-        range = spos..x
+        range = [spos..x]
         e = a.slice(range)
         # e.should be_kind_of AviGlitch::Frames
         assert.lengthOf e, asize - spos + x + 1
@@ -326,7 +331,7 @@ describe 'Frames', ->
         # c.should be_kind_of AviGlitch::Frames
         assert.equal a.frames.length, l - 1 - 10
 
-        d = a.frames.slice!(0..9)
+        d = a.frames.slice_save([0..9])
         # d.should be_kind_of AviGlitch::Frames
         assert.equal a.frames.length, l - 1 - 10 - 10
 
@@ -372,7 +377,7 @@ describe 'Frames', ->
         c.to_avi.output @out
         assert.ok Base.is_surely_formatted(@out, true)
 
-    it 'should manipulate frames like array does' ->
+    it 'should manipulate frames like array does', ->
         avi = AviGlitch.open @in
         a = avi.frames
         x = Array.new a.length
@@ -381,12 +386,12 @@ describe 'Frames', ->
         fx = x.slice(0, 100)
         assert.lengthOf fa, fx.length
 
-        fa = a.slice(100..-1)
-        fx = x.slice(100..-1)
+        fa = a.slice([100..-1])
+        fx = x.slice([100..-1])
         assert.lengthOf fa, fx.length
 
-        fa = a.slice(100..-10)
-        fx = x.slice(100..-10)
+        fa = a.slice([100..-10])
+        fx = x.slice([100..-10])
         assert.lengthOf fa, fx.length
 
         fa = a.slice(-200, 10)
@@ -435,7 +440,7 @@ describe 'Frames', ->
 
     it 'should mutate keyframes into deltaframe', ->
         a = AviGlitch.open @in
-        a.frames.mutate_keyframes_into_deltaframes!
+        a.frames.mutate_keyframes_into_deltaframes()
         a.output @out
         a = AviGlitch.open @out
         a.frames.each (f) ->
@@ -443,20 +448,17 @@ describe 'Frames', ->
         end
 
         a = AviGlitch.open @in
-        a.frames.mutate_keyframes_into_deltaframes! 0..50
+        a.frames.mutate_keyframes_into_deltaframes [0..50]
         a.output @out
         a = AviGlitch.open @out
-        a.frames.each_with_index do |f, i|
+        a.frames.each_with_index (f, i) ->
             if i <= 50
                 assert.isFalse f.is_keyframe()
-            end
-        end
-    end
 
-    it 'should return Enumerator with #each' do
+    it 'should return Enumerator with #each', ->
         a = AviGlitch.open @in
-        enum = a.frames.each
-        enum.each (f, i)
+        enumerate = a.frames.each
+        enumerate.each (f, i) ->
             if f.is_keyframe()
                 f.data = f.data.replace(/\d/, '')
 
@@ -512,18 +514,18 @@ describe 'Frames', ->
 
         a.close()
 
-        expect(kc1).to.eql(kc)
-        expect(kc2).to.eql(kc)
-        expect(kc3).to.eql(kc)
-        expect(kc4).to.eql(kc)
+        assert kc1 == kc
+        assert kc2 == kc
+        assert kc3 == kc
+        assert kc4 == kc
 
-        expect(dc1).to.eql(dc)
-        expect(dc2).to.eql(dc)
-        expect(dc3).to.eql(dc)
-        expect(dc4).to.eql(dc)
+        assert dc1 == dc
+        assert dc2 == dc
+        assert dc3 == dc
+        assert dc4 == dc
 
-        expect(vc1).to.eql(vc)
-        expect(vc2).to.eql(vc)
+        assert vc1 == vc
+        assert vc2 == vc
 
-        expect(ac1).to.eql(ac)
-        expect(ac2).to.eql(ac)
+        assert ac1 == ac
+        assert ac2 == ac

@@ -87,7 +87,10 @@ class Frames
         @meta = @meta.filter (m, i) =>
             @io.seek @pos_of_movi + m.offset + 8   # 8 for id and size
             frame = new Frame(@io.read(m.size), m.id, m.flag)
-            frame.data = callback(frame, i) if callback?   # accept the variable callback
+            if callback?   # accept the variable callback
+                data = callback(frame, i)
+                if data? or data == null
+                    frame.data = data
             if frame.data?
                 if (not Buffer.isBuffer(frame.data)) and frame.data == null
                     return false

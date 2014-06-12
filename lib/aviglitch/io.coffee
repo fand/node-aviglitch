@@ -13,10 +13,11 @@ class IO
         a: 1
         V: 4
 
-    constructor: (@path, flags, @pos = 0, cb) ->
+    constructor: (@path, flags, @pos = 0, callback) ->
         @is_io = true
         flags = if flags? then flags else 'w+'
         @fd = fs.openSync @path, flags
+        callback() if callback?
 
     size: -> fs.fstatSync(@fd)["size"]
     seek: (@pos) -> @pos
@@ -29,7 +30,6 @@ class IO
             size = @size() - @pos
         if size <= 0
             return new Buffer(0)
-#            return undefined
 
         buf = new Buffer size
         @pos += fs.readSync(@fd, buf, 0, size, @pos)

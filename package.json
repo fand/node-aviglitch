@@ -10,9 +10,12 @@
     "optimist": "^0.6.1"
   },
   "devDependencies": {
-    "mocha": "^1.18.2"
+    "espower-loader": "^0.7.1",
+    "mocha": "^1.18.2",
+    "power-assert": "^0.7.2"
   },
   "scripts": {
+    "test-power": "mocha --require enable-power-assert",
     "test": "mocha"
   },
   "author": "Jun Fan <fand@kde.cs.tsukuba.ac.jp> (http://gmork.in/)",
