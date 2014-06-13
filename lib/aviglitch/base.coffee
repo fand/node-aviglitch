@@ -28,7 +28,7 @@ class Base
             d = f.read(BUFFER_SIZE)
 
         f.close()
-
+        console.error 'file: ' + JSON.stringify @file
         unless Base.surely_formatted @file
             throw new Error 'Unsupported file passed.'
 

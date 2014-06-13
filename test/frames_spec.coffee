@@ -85,37 +85,34 @@ describe 'Frames', ->
         avi = AviGlitch.open @in
         frames = avi.frames
         frames.each (f) ->
-            f.data.should_not == null
+            assert f.data != null
         avi.close()
 
-    return
+    # No private property for JavaScript objects.
+    # it 'should hide the inner variables', ->
+    #     avi = AviGlitch.open @in
+    #     frames = avi.frames
+    #     assert.throws (-> frames.meta()), /NoMethodError/
+    #     assert.throws (-> frames.io()), /NoMethodError/
+    #     assert.throws (-> frames.frames_data_as_io()), /NoMethodError/
+    #     avi.close()
 
-    it 'should hide the inner variables', ->
-        avi = AviGlitch.open @in
-        frames = avi.frames
-        assert.throws (-> frames.meta), /NoMethodError/
-        assert.throws (-> frames.io), /NoMethodError/
-        assert.throws (-> frames.frames_data_as_io), /NoMethodError/
-        avi.close()
-
-    it 'should save video frames count in header', ->
+    it 'should save video frames count in header', (done) ->
         avi = AviGlitch.open @in
         c = 0
         avi.frames.each (f) ->
             c += 1 if f.is_videoframe()
         avi.output @out
-
         fs.readFile @out, (err, data) ->
             throw err if err
-            buf = new Buffer(4)
-            for i in [0...4]
-                buf[3 - i] = data[48 + i]
-            assert.equal buf.toString(), c
+            data = new Buffer(data) unless Buffer.isBuffer data
+            assert.equal data.readUInt32LE(48), c, 'frames count in header is correct'
+            done()
 
     it 'should evaluate the equality with owned contents', ->
         a = AviGlitch.open @in
         b = AviGlitch.open @in
-        assert.equal a.frames, b.frames
+        assert a.frames.equal b.frames
 
     it 'can generate AviGlitch::Base instance', ->
         a = AviGlitch.open @in
@@ -128,6 +125,7 @@ describe 'Frames', ->
         c.output @out
         assert.ok Base.is_surely_formatted(@out, true)
 
+    return
 
     it 'can concat with other Frames instance with #concat, destructively', ->
         a = AviGlitch.open @in

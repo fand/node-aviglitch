@@ -52,6 +52,9 @@ class IO
     close: (callback) ->
         fs.close @fd, -> callback() if callback?
 
+    closeSync: ->
+        fs.closeSync @fd
+
     truncate: (size) ->
         fs.ftruncateSync @fd, size
 

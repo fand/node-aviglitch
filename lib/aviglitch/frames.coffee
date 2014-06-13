@@ -89,11 +89,10 @@ class Frames
             frame = new Frame(@io.read(m.size), m.id, m.flag)
             if callback?   # accept the variable callback
                 data = callback(frame, i)
-                if data? or data == null
+                if Buffer.isBuffer(data) or data == null
                     frame.data = data
             if frame.data?
-                if (not Buffer.isBuffer(frame.data)) and frame.data == null
-                    return false
+                return false if frame.data == null
                 m.offset = io_dst.pos + 4   # 4 for 'movi'
                 m.size = frame.data.length
                 m.flag = frame.flag
@@ -213,22 +212,22 @@ class Frames
     # or with the Range.
     # Just like Array.
     slice: ->
-        [head, length] = @get_head_and_length arguments
-        if length?
-            pos_tail = head + length
+        [head, tail] = @get_head_and_tail arguments    # allows negative tail
+        if tail?
             r = @to_avi()
             r.frames.each_with_index (f, i) ->
                 unless head <= i && i < tail
                     f.data = null
             return r.frames
         else
-            @at b
+            return @at head
 
     ##
     # Removes frame(s) at the given index or the range (same as slice).
     # Returns the new Frames contains removed frames.
     slice_save: ->
-        [head, length] = @get_head_and_length arguments
+        [head, tail] = @get_head_and_tail arguments
+        length = tail - head
         [header, sliced, footer] = []
         sliced = if length? then @slice(head, length) else @slice(head)
         head = @slice(0, head)
@@ -315,23 +314,17 @@ class Frames
     ##
     # Generates new AviGlitch::Base instance using self.
     to_avi: ->
-      AviGlitch.open @io.path
+        AviGlitch = require '../aviglitch.coffee'
+        AviGlitch.open @io.path
 
     inspect: ->
         "#<#{self.class.name}:#{sprintf("0x%x", object_id)} @io=#{@io.inspect} size=#{self.size}>"
 
-    get_head_and_length: ->
-        [head, length] = arguments
-        if Array.isArray arguments[0]
-            [head, length] = arguments[0]
-
-        if length?
-            end = if length >= 0 then length else @meta.length + length
-            length = end - head + 1
-
+    get_head_and_tail: (head, tail) ->
+        [head, tail] = head if head.length?
         head = if head >= 0 then head else @meta.length + head
-        [head, length]
-
+        tail = @meta.length + tail if tail? and tail < 0
+        return [head, tail]
 
     safe_frames_count: (count) ->
         r = true
@@ -364,6 +357,19 @@ class Frames
 
     # protected :frames_data_as_io, :meta
     # private :overwrite, :get_head_and_length, :fix_offsets_if_needed
+
+
+    equal: (that) ->
+        return false unless that.is_frames?
+        for i in [0...@meta.length]
+            m_this = @meta[i]
+            m_that = that.meta[i]
+            if m_this.id != m_that.id or
+            m_this.flag != m_that.flag or
+            m_this.offset != m_that.offset or
+            m_this.size != m_that.size
+                return false
+        return true
 
 
 module.exports = Frames
