@@ -47,6 +47,7 @@ describe 'Frames', ->
         assert f_in?, 'in file exists'
         assert f_out?, 'out file exists'
         assert.deepEqual f_in, f_out, 'nothing changed'
+        avi.close()
 
     it 'can manipulate each frame', (done) ->
         avi = AviGlitch.open @in
@@ -72,6 +73,7 @@ describe 'Frames', ->
         avi = AviGlitch.open @out
         out_frame_size = avi.frames.length()
         assert.equal out_frame_size, in_frame_size - rem_count
+        avi.close()
 
     # it 'should read correct positions in #each', ->
     #     avi = AviGlitch.open @in
@@ -108,77 +110,76 @@ describe 'Frames', ->
             data = new Buffer(data) unless Buffer.isBuffer data
             assert.equal data.readUInt32LE(48), c, 'frames count in header is correct'
             done()
+            avi.close()
 
     it 'should evaluate the equality with owned contents', ->
         a = AviGlitch.open @in
         b = AviGlitch.open @in
         assert a.frames.equal b.frames
+        a.close()
+        b.close()
 
     it 'can generate AviGlitch::Base instance', ->
         a = AviGlitch.open @in
         b = a.frames.slice(0, 10)
         c = b.to_avi()
-        console.error 'ukeaaaaaaa$$$$$$$$$$$$'
 
         # How can I do this?
         # c.should be_kind_of AviGlitch::Base
 
         c.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
-
-    return
+        assert.ok Base.surely_formatted(@out, true)
 
     it 'can concat with other Frames instance with #concat, destructively', ->
         a = AviGlitch.open @in
         b = AviGlitch.open @in
-        asize = a.frames.length
-        bsize = b.frames.length
+        asize = a.frames.length()
+        bsize = b.frames.length()
         assert.throws (->
             a.frames.concat([1,2,3])
         ), /TypeError/
         a.frames.concat(b.frames)
-        assert.lengthOf a.frames, asize + bsize
-        assert.lengthOf b.frames, bsize
+        assert.equal a.frames.length(), asize + bsize
+        assert.equal b.frames.length(), bsize
         a.output @out
         b.close()
-        assert.ok Base.is_surely_formatted(@out, true)
+        assert Base.surely_formatted(@out, true)
 
-    it 'can concat with other Frames instance with +', ->
-        a = AviGlitch.open @in
-        b = AviGlitch.open @in
-        asize = a.frames.length
-        bsize = b.frames.length
-        c = a.frames + b.frames
-        assert.lengthOf a.frames, asize
-        assert.lengthOf b.frames, bsize
-        # c.should be_kind_of AviGlitch::Frames
-        assert.lengthOf c, asize + bsize
-        a.close()
-        b.close()
-        d = AviGlitch.open c
-        d.output @out
-        assert.ok Base.surely_formatted?(@out, true)
+    # Cannot overlaod operand in JS!
+    # it 'can concat with other Frames instance with +', ->
+    #     a = AviGlitch.open @in
+    #     b = AviGlitch.open @in
+    #     asize = a.frames.length
+    #     bsize = b.frames.length
+    #     c = a.frames + b.frames
+    #     assert a.frames.length() == asize
+    #     assert b.frames.length() == bsize
+    #     # c.should be_kind_of AviGlitch::Frames
+    #     assert c.length() == asize + bsize
+    #     a.close()
+    #     b.close()
+    #     d = AviGlitch.open c
+    #     d.output @out
+    #     assert.ok Base.surely_formatted?(@out, true)
 
     it 'can slice frames using start pos and length', ->
         avi = AviGlitch.open @in
         a = avi.frames
-        asize = a.length
-        c = Math.floor(a.length / 3)
-        b = a.slice(1, c)
+        asize = a.length()
+        c = Math.floor(asize / 3)
+        b = a.slice(1, c+1)
         # b.should be_kind_of Frames
-        assert.lengthOf b, c
-        assert.doesNotThrow (->
+        assert b.length() == c
+        assert.doesNotThrow ->
             b.each (x) -> x
-        )
 
-        assert.lengthOf a, asize  # make sure a is not destroyed
-        assert.doesNotThrow (->
+        assert a.length() == asize  # make sure a is not destroyed
+        assert.doesNotThrow ->
             a.each (x) -> x
-        )
 
         avi.frames.concat b
         avi.output @out
-        assert.ok Base.surely_formatted?(@out, true)
+        assert Base.surely_formatted?(@out, true)
 
     it 'can slice frames using Range', ->
         avi = AviGlitch.open @in
