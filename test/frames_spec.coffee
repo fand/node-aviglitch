@@ -118,6 +118,7 @@ describe 'Frames', ->
         a = AviGlitch.open @in
         b = a.frames.slice(0, 10)
         c = b.to_avi()
+        console.error 'ukeaaaaaaa$$$$$$$$$$$$'
 
         # How can I do this?
         # c.should be_kind_of AviGlitch::Base

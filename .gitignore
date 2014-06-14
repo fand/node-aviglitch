@@ -10,3 +10,4 @@ Gemfile.lock
 Guardfile
 *.rb
 node_modules/
+lib/

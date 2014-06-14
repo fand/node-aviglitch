@@ -1,9 +1,9 @@
 path = require 'path'
 
-Base   = require './aviglitch/base.coffee'
-Frame  = require './aviglitch/frame.coffee'
-Frames = require './aviglitch/frames.coffee'
-IO     = require './aviglitch/io.coffee'
+Base   = require './aviglitch/base'
+Frame  = require './aviglitch/frame'
+Frames = require './aviglitch/frames'
+IO     = require './aviglitch/io'
 
 # AviGlitch provides the ways to glitch AVI formatted video files.
 #

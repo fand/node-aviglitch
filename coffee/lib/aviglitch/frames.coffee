@@ -1,5 +1,5 @@
-Frame = require './frame.coffee'
-IO = require './io.coffee'
+Frame = require './frame'
+IO = require './io'
 Readline = require 'readline'
 readline = Readline.createInterface input: process.stdin, output: process.stdout
 
@@ -314,7 +314,7 @@ class Frames
     ##
     # Generates new AviGlitch::Base instance using self.
     to_avi: ->
-        AviGlitch = require '../aviglitch.coffee'
+        AviGlitch = require '../aviglitch'
         AviGlitch.open @io.path
 
     inspect: ->
