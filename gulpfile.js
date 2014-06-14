@@ -4,7 +4,7 @@ var plumber = require('gulp-plumber');
 var mocha = require('gulp-mocha');
 
 gulp.task('coffee', function () {
-  gulp.src('coffee/lib/**/*.coffee')
+  return gulp.src('coffee/lib/**/*.coffee')
     .pipe(plumber())
     .pipe(coffee())
     .pipe(gulp.dest('lib'));
@@ -21,9 +21,13 @@ gulp.task('test', function () {
     }));
 });
 
-gulp.task('default', ['coffee', 'test']);
-gulp.task('watch', function () {
-  gulp.watch('coffee/lib/**/*.coffee', ['coffee', 'test']);
-  gulp.watch('test/*.coffee', ['test']);
-  return;
+gulp.task('test-coffee', ['coffee'], function () {
+  gulp.start('test');
 });
+gulp.task('watch-coffee', ['coffee', 'test-coffee']);
+
+gulp.task('watch', function () {
+  gulp.watch('coffee/lib/**/*.coffee', ['watch-coffee']);
+  gulp.watch('test/*.coffee', ['test']);
+});
+gulp.task('default', ['watch']);
