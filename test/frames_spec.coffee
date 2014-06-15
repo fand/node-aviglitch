@@ -43,6 +43,8 @@ describe 'Frames', ->
             fs.rmdirSync TMP_DIR
             done()
 
+
+
     it 'should save the same file when nothing is changed', ->
         avi = AviGlitch.open @in
         avi.frames.each ->
@@ -177,7 +179,7 @@ describe 'Frames', ->
         c = Math.floor(asize / 3)
         b = a.slice(1, c+1)
         assert.instanceOf b, Frames
-        assert b.length() == c
+        assert.equal b.length(), c
         assert.doesNotThrow ->
             b.each (x) -> x
 
@@ -195,10 +197,10 @@ describe 'Frames', ->
         asize = a.length()
         c = Math.floor(asize / 3)
         spos = 3
-        range = [spos..(spos + c)]
+        range = [spos...(spos + c)]
         b = a.slice(range)
         assert.instanceOf b, Frames
-        assert b.length() == c
+        assert.equal b.length(), c
         assert.doesNotThrow (->
             b.each (x) -> x
         )
@@ -207,16 +209,16 @@ describe 'Frames', ->
         range = [spos, -1]
         d = a.slice(range)
         assert.instanceOf d, Frames
-        assert d.length() == asize - spos
+        assert.equal d.length(), asize - spos
         assert.doesNotThrow (->
             d.each (x) -> x
         )
 
         x = -5
-        range = [spos..x]
+        range = [spos...x]
         e = a.slice(range)
         assert.instanceOf e, Frames
-        assert e.length() == asize - spos + x + 1
+        assert.equal e.length(), asize - spos + x + 3
         assert.doesNotThrow (->
             d.each (x) -> x
         )
@@ -273,6 +275,7 @@ describe 'Frames', ->
         x = a.frames.push b
         assert.equal a.frames.length(), s + 1
         assert.equal x, a.frames
+
         assert.deepEqual a.frames.meta, c.meta
         assert.deepEqual a.frames.last().data, c.last().data
         x = a.frames.push b
@@ -299,82 +302,85 @@ describe 'Frames', ->
         a.frames.clear()
         assert.equal a.frames.length(), 0
 
-    return
+
 
     it 'can delete one frame using delete_at', ->
         a = AviGlitch.open @in
-        l = a.frames.length
-        b = a.frames[10]
-        c = a.frames[11]
-        x = a.frames.splice 10, 1
+        l = a.frames.length()
+        b = a.frames.at(10)
+        c = a.frames.at(11)
+        x = a.frames.delete_at 10
 
-        assert.equal x.data, b.data
-        assert.equal a.frames[10].data, c.data
-        assert.equal a.frames.length, l - 1
+        assert.deepEqual x.data, b.data
+        assert.deepEqual a.frames.at(10).data, c.data
+        assert.equal a.frames.length(), l - 1
 
         a.output @out
-        asssert.ok Base.is_surely_formatted(@out, true)
+        assert.ok Base.surely_formatted(@out, true)
 
     it 'can insert one frame into other frames using insert', ->
         a = AviGlitch.open @in
-        l = a.frames.length
-        b = a.frames[10]
+        l = a.frames.length()
+        b = a.frames.at(10)
         x = a.frames.insert 5, b
 
         assert.equal x, a.frames
-        assert.equal a.frames[5].data, b.data
-        assert.equal a.frames[11].data, b.data
-        assert.equal a.frames.length, l + 1
+        assert.deepEqual a.frames.at(5).data, b.data
+        assert.deepEqual a.frames.at(11).data, b.data
+        assert.equal a.frames.length(), l + 1
 
         a.output @out
-        asssert.ok Base.is_surely_formatted(@out, true)
+        assert.ok Base.surely_formatted(@out, true)
 
-    it 'can slice frames destructively using slice!', ->
+    it 'can slice frames destructively using slice_save', ->
         a = AviGlitch.open @in
-        l = a.frames.length
+        l = a.frames.length()
 
-        b = a.frames.splice(10, 1)
-        # b.should be_kind_of AviGlitch::Frame
-        assert.equal a.frames.length, l - 1
 
-        c = a.frames.splice(0, 10)
-        # c.should be_kind_of AviGlitch::Frames
-        assert.equal a.frames.length, l - 1 - 10
+        b = a.frames.slice_save(10)
+        assert.instanceOf b, Frame
+        assert.equal a.frames.length(), l - 1
 
-        d = a.frames.slice_save([0..9])
-        # d.should be_kind_of AviGlitch::Frames
-        assert.equal a.frames.length, l - 1 - 10 - 10
+        c = a.frames.slice_save(0, 10)
+        assert.instanceOf c, Frames
+        assert.equal a.frames.length(), l - 1 - 10
 
-    it 'can swap frame(s) using []=', ->
-        a = AviGlitch.open @in
-        l = a.frames.length
-        assert.throws (->
-            a.frames[10] = "xxx"
-        ), /TypeError/
+        d = a.frames.slice_save([0...10])
+        assert.instanceOf d, Frames
+        assert.equal a.frames.length(), l - 1 - 10 - 10
 
-        b = a.frames[20]
-        a.frames[10] = b
-        assert.lengthOf a.frames, 1
-        assert.equal a.frames[10].data, b.data
+    # it 'can swap frame(s) using swap', ->
+    #     a = AviGlitch.open @in
+    #     l = a.frames.length()
+    #     assert.throws (->
+    #         a.frames.swap 10, "xxx"
+    #     ), /TypeError/
 
-        a.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+    #     b = a.frames.at(20)
+    #     a.frames.swap 10, b
+    #     assert.equal a.frames.length(), 1
+    #     assert.equal a.frames[10].data, b.data
 
-        a = AviGlitch.open @in
-        pl = 5
-        pp = 3
-        b = a.frames[20...20+pl]
-        a.frames[10..(10 + pp)] = b
-        assert.lengthOf a.frames, l - pp + pl - 1
-        for i in [0...pp]
-            assert.equal a.frames[10 + i].data, b[i].data
+    #     a.output @out
+    #     assert.ok Base.surely_formatted(@out, true)
 
-        assert.throws (->
-            a.frames[10] = a.frames.slice(100, 1)
-        ), /TypeError/
+    #     a = AviGlitch.open @in
+    #     pl = 5
+    #     pp = 3
+    #     b = a.frames[20...20+pl]
+    #     a.frames[10..(10 + pp)] = b
+    #     assert a.frames.length(), l - pp + pl - 1
+    #     for i in [0...pp]
+    #         assert.equal a.frames.at(10 + i).data, b.at(i).data
 
-        a.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+    #     assert.throws (->
+    #         a.frames.swap 10, a.frames.slice(100, 1)
+    #     ), /TypeError/
+
+    #     a.output @out
+    #     assert.ok Base.surely_formatted(@out, true)
+
+    return
 
     it 'can repeat frames using *', ->
         a = AviGlitch.open @in

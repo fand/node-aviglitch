@@ -215,17 +215,15 @@ class Frames
     # returns new Frames object that sliced with the given index and length
     # or with the Range.
     # Just like Array.
-    slice: (head, tail) ->
+    slice: (head, tail, as_frames = false) ->
+        return @at head unless head.length? or tail?
         [head, tail] = @get_head_and_tail head, tail    # allow negative tail.
-        if tail?
-            count = 0
-            r = @to_avi()
-            r.frames.each_with_index (f, i) ->
-                unless head <= i && i < tail
-                    f.data = null
-            return r.frames
-        else
-            return @at head
+        count = 0
+        r = @to_avi()
+        r.frames.each_with_index (f, i) ->
+            unless head <= i && i < tail
+                f.data = null
+        return r.frames
 
     ##
     # Removes frame(s) at the given index or the range (same as slice).
@@ -234,12 +232,13 @@ class Frames
         [head, tail] = @get_head_and_tail head, tail
         length = tail - head
         [header, sliced, footer] = []
-        sliced = if length? then @slice(head, length) else @slice(head)
-        head = @slice(0, head)
+        sliced = if length > 1 then @slice(head, tail) else @slice(head)
+        header = @slice(0, head)
         length = 1 unless length?
-        tail = @slice((head + length), -1)
+        footer = @slice(tail, -1)
         @clear()
-        @concat header + footer
+        @concat header
+        @concat footer
         return sliced
 
     ##
@@ -292,10 +291,11 @@ class Frames
     # Inserts the given Frame objects into the given index.
     insert: (n) ->
         new_frames = @slice(0, n)
-        arguments.slice(1).each (f) ->
-            new_frames.push f
-        new_frames.concat @slice(n)
 
+        for i in [1...arguments.length]
+            new_frames.push arguments[i]
+
+        new_frames.concat @slice(n, -1)
         @clear()
         @concat new_frames
         return this
@@ -329,9 +329,14 @@ class Frames
 
     get_head_and_tail: (head, tail) ->
         if head.length?
-            [head, tail] = [head[0], head[head.length - 1]]
+            [head, tail] = [head[0], head[head.length - 1] + 1]
+            tail -= 1 if tail == 0
         head = if head >= 0 then head else @meta.length + head
-        tail = @meta.length + tail + 1 if tail? and tail < 0
+        if tail?
+            if tail < 0
+                tail = @meta.length + tail + 1
+        else
+            tail = head + 1
         return [head, tail]
 
     safe_frames_count: (count) ->
