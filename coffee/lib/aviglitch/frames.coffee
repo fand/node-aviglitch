@@ -64,9 +64,12 @@ class Frames
     # It returns Enumerator if a callback is not given.
     each: (callback) ->
         return null unless callback?
-        temp = new IO 'frames'
+        temp = IO.temp()
         @frames_data_as_io temp, callback
         @overwrite temp
+
+    each_with_index: (callback) ->
+        @each callback
 
     ##
     # Returns the number of frames.
@@ -158,8 +161,10 @@ class Frames
         #raise TypeError unless other_frames.kind_of?(Frames)
 
         # data
-        this_data = new IO 'this'
-        other_data = new IO 'other'
+        # this_data = new IO 'this'
+        # other_data = new IO 'other'
+        this_data  = IO.temp()
+        other_data = IO.temp()
 
         # Reconstruct idx data.
         @frames_data_as_io this_data
@@ -211,9 +216,10 @@ class Frames
     # returns new Frames object that sliced with the given index and length
     # or with the Range.
     # Just like Array.
-    slice: ->
-        [head, tail] = @get_head_and_tail arguments    # allows negative tail
+    slice: (head, tail) ->
+        [head, tail] = @get_head_and_tail head, tail    # allow negative tail.
         if tail?
+            count = 0
             r = @to_avi()
             r.frames.each_with_index (f, i) ->
                 unless head <= i && i < tail
@@ -225,8 +231,8 @@ class Frames
     ##
     # Removes frame(s) at the given index or the range (same as slice).
     # Returns the new Frames contains removed frames.
-    slice_save: ->
-        [head, tail] = @get_head_and_tail arguments
+    slice_save: (head, tail) ->
+        [head, tail] = @get_head_and_tail head, tail
         length = tail - head
         [header, sliced, footer] = []
         sliced = if length? then @slice(head, length) else @slice(head)
@@ -315,15 +321,16 @@ class Frames
     # Generates new AviGlitch::Base instance using self.
     to_avi: ->
         AviGlitch = require '../aviglitch'
-        AviGlitch.open @io.path
+        AviGlitch.open @io.fullpath()
 
     inspect: ->
         "#<#{self.class.name}:#{sprintf("0x%x", object_id)} @io=#{@io.inspect} size=#{self.size}>"
 
     get_head_and_tail: (head, tail) ->
-        [head, tail] = head if head.length?
+        if head.length?
+            [head, tail] = [head[0], head[head.length - 1]]
         head = if head >= 0 then head else @meta.length + head
-        tail = @meta.length + tail if tail? and tail < 0
+        tail = @meta.length + tail + 1 if tail? and tail < 0
         return [head, tail]
 
     safe_frames_count: (count) ->

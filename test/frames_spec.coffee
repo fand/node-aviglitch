@@ -1,11 +1,12 @@
 mocha = require 'mocha'
-assert = require 'assert'
+assert = require 'power-assert'
 
 fs = require 'fs'
 path = require 'path'
 #helper = require path.join __dirname, '/spec_helper'
 FILES_DIR = path.join __dirname, 'files'
 OUTPUT_DIR = path.join FILES_DIR, 'output'
+TMP_DIR = 'tmp'
 
 AviGlitch = require 'lib/aviglitch'
 Base = require 'lib/aviglitch/base'
@@ -33,8 +34,13 @@ describe 'Frames', ->
             fs.unlinkSync path.join(OUTPUT_DIR, file) for file in files
             done()
 
-    after ->
+    after (done) ->
         fs.rmdirSync OUTPUT_DIR
+        fs.readdir TMP_DIR, (err, files) ->
+            throw err if err
+            fs.unlinkSync path.join(TMP_DIR, file) for file in files
+            fs.rmdirSync TMP_DIR
+            done()
 
     it 'should save the same file when nothing is changed', ->
         avi = AviGlitch.open @in
@@ -181,24 +187,25 @@ describe 'Frames', ->
         avi.output @out
         assert Base.surely_formatted?(@out, true)
 
-    it 'can slice frames using Range', ->
+    it 'can slice frames using Range as an Array', ->
         avi = AviGlitch.open @in
         a = avi.frames
-        asize = a.length
-        c = (a.length / 3).floor
+        asize = a.length()
+        c = Math.floor(asize / 3)
         spos = 3
         range = [spos..(spos + c)]
         b = a.slice(range)
         #b.should be_kind_of AviGlitch::Frames
-        assert.lengthOf b, c + 1
+        assert b.length() == c
         assert.doesNotThrow (->
             b.each (x) -> x
         )
 
-        range = [spos..-1]
+        # negative value to represent the distance from last.
+        range = [spos, -1]
         d = a.slice(range)
         # d.should be_kind_of AviGlitch::Frames
-        assert.lengthOf d, asize - spos
+        assert d.length() == asize - spos
         assert.doesNotThrow (->
             d.each (x) -> x
         )
@@ -207,10 +214,12 @@ describe 'Frames', ->
         range = [spos..x]
         e = a.slice(range)
         # e.should be_kind_of AviGlitch::Frames
-        assert.lengthOf e, asize - spos + x + 1
+        assert e.length() == asize - spos + x + 1
         assert.doesNotThrow (->
             d.each (x) -> x
         )
+
+    return
 
     it 'can concat repeatedly the same sliced frames', ->
         a = AviGlitch.open @in

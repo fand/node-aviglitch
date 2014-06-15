@@ -1,4 +1,5 @@
 fs = require 'fs'
+path = require 'path'
 
 class IO
     read_formats =
@@ -16,8 +17,22 @@ class IO
     constructor: (@path, flags, @pos = 0, callback) ->
         @is_io = true
         flags = if flags? then flags else 'w+'
-        @fd = fs.openSync @path, flags
+        @fd = fs.openSync @fullpath(), flags
         callback() if callback?
+
+    @tmp_id = 0
+    @temp = (flags, callback) ->
+        unless @has_tmp
+            @has_tmp = true
+            fs.mkdirSync 'tmp' unless fs.existsSync 'tmp'
+            process.addListener 'exit', ->
+                fs.rmdirSync 'tmp'
+            process.addListener 'error', ->
+                fs.rmdirSync 'tmp'
+
+        tmppath = path.resolve 'tmp', @tmp_id.toString()
+        @tmp_id += 1
+        io = new IO tmppath, 'w+', 0, callback
 
     size: -> fs.fstatSync(@fd)["size"]
     seek: (@pos) -> @pos
@@ -57,6 +72,9 @@ class IO
 
     truncate: (size) ->
         fs.ftruncateSync @fd, size
+
+    fullpath: ->
+        path.resolve __dirname, '../../', @path
 
     ##
     # Pack data to a binary string.

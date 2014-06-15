@@ -21,14 +21,16 @@ class Base
         f = new IO path, 'r'
 
         # copy as tempfile
-        @file = new IO 'aviglitch'
+        # @name = 'tmp' + new Date().getTime().toString()
+        # @file = new IO @name, 'w+'
+        @file = IO.temp 'w+'
         d = f.read(BUFFER_SIZE)
         while d.length > 0
             @file.write d
             d = f.read(BUFFER_SIZE)
 
         f.close()
-        console.error 'file: ' + JSON.stringify @file
+#        console.error 'file: ' + JSON.stringify @file
         unless Base.surely_formatted @file
             throw new Error 'Unsupported file passed.'
 
@@ -151,7 +153,6 @@ class Base
     @surely_formatted = (file, debug = false) ->
         answer = true
         is_io = file.is_io?  # Probably IO.
-
         file = new IO(file, 'r') unless is_io
 
         try

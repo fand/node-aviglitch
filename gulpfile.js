@@ -3,6 +3,8 @@ var coffee = require('gulp-coffee');
 var plumber = require('gulp-plumber');
 var mocha = require('gulp-mocha');
 
+require('intelli-espower-loader');
+
 gulp.task('coffee', function () {
   return gulp.src('coffee/lib/**/*.coffee')
     .pipe(plumber())

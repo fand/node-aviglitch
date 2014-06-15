@@ -15,6 +15,7 @@
     "gulp-coffee": "^2.0.1",
     "gulp-mocha": "^0.4.1",
     "gulp-plumber": "^0.6.3",
+    "intelli-espower-loader": "^0.1.0",
     "mocha": "^1.18.2",
     "power-assert": "^0.7.2"
   },
@@ -23,5 +24,8 @@
     "test": "mocha"
   },
   "author": "Jun Fan <fand@kde.cs.tsukuba.ac.jp> (http://gmork.in/)",
-  "license": "MIT"
+  "license": "MIT",
+  "directories": {
+    "test": "test/"
+  }
 }
