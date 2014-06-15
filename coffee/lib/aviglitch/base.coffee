@@ -21,8 +21,6 @@ class Base
         f = new IO path, 'r'
 
         # copy as tempfile
-        # @name = 'tmp' + new Date().getTime().toString()
-        # @file = new IO @name, 'w+'
         @file = IO.temp 'w+'
         d = f.read(BUFFER_SIZE)
         while d.length > 0
@@ -30,7 +28,6 @@ class Base
             d = f.read(BUFFER_SIZE)
 
         f.close()
-#        console.error 'file: ' + JSON.stringify @file
         unless Base.surely_formatted @file
             throw new Error 'Unsupported file passed.'
 

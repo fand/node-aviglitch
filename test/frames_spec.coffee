@@ -1,5 +1,5 @@
 mocha = require 'mocha'
-assert = require 'power-assert'
+assert = require('chai').assert
 
 fs = require 'fs'
 path = require 'path'
@@ -11,6 +11,7 @@ TMP_DIR = 'tmp'
 AviGlitch = require 'lib/aviglitch'
 Base = require 'lib/aviglitch/base'
 Frames = require 'lib/aviglitch/frames'
+Frame = require 'lib/aviglitch/frame'
 
 
 describe 'Frames', ->
@@ -131,7 +132,7 @@ describe 'Frames', ->
         c = b.to_avi()
 
         # How can I do this?
-        # c.should be_kind_of AviGlitch::Base
+        assert.instanceOf c, Base
 
         c.output @out
         assert.ok Base.surely_formatted(@out, true)
@@ -141,9 +142,10 @@ describe 'Frames', ->
         b = AviGlitch.open @in
         asize = a.frames.length()
         bsize = b.frames.length()
+
         assert.throws (->
             a.frames.concat([1,2,3])
-        ), /TypeError/
+        ), TypeError
         a.frames.concat(b.frames)
         assert.equal a.frames.length(), asize + bsize
         assert.equal b.frames.length(), bsize
@@ -174,7 +176,7 @@ describe 'Frames', ->
         asize = a.length()
         c = Math.floor(asize / 3)
         b = a.slice(1, c+1)
-        # b.should be_kind_of Frames
+        assert.instanceOf b, Frames
         assert b.length() == c
         assert.doesNotThrow ->
             b.each (x) -> x
@@ -195,7 +197,7 @@ describe 'Frames', ->
         spos = 3
         range = [spos..(spos + c)]
         b = a.slice(range)
-        #b.should be_kind_of AviGlitch::Frames
+        assert.instanceOf b, Frames
         assert b.length() == c
         assert.doesNotThrow (->
             b.each (x) -> x
@@ -204,7 +206,7 @@ describe 'Frames', ->
         # negative value to represent the distance from last.
         range = [spos, -1]
         d = a.slice(range)
-        # d.should be_kind_of AviGlitch::Frames
+        assert.instanceOf d, Frames
         assert d.length() == asize - spos
         assert.doesNotThrow (->
             d.each (x) -> x
@@ -213,13 +215,11 @@ describe 'Frames', ->
         x = -5
         range = [spos..x]
         e = a.slice(range)
-        # e.should be_kind_of AviGlitch::Frames
+        assert.instanceOf e, Frames
         assert e.length() == asize - spos + x + 1
         assert.doesNotThrow (->
             d.each (x) -> x
         )
-
-    return
 
     it 'can concat repeatedly the same sliced frames', ->
         a = AviGlitch.open @in
@@ -227,60 +227,60 @@ describe 'Frames', ->
         c = a.frames.slice(0, 10)
         for i in [0...10]
             b.concat(c)
-        assert.lengthOf b, 5 + (10 * 10)
+        assert b.length() ==  5 + (10 * 10)
 
     it 'can get one single frame using slice(n)', ->
         a = AviGlitch.open @in
         pos = 10
-        b = nil
+        b = null
         a.frames.each_with_index (f, i) ->
             b = f if i == pos
         c = a.frames.slice(pos)
-        # c.should be_kind_of AviGlitch::Frame
-        assert.equal c.data, b.data
+        assert.instanceOf c, Frame
+        assert.deepEqual c.data, b.data
 
     it 'can get one single frame using at(n)', ->
         a = AviGlitch.open @in
         pos = 10
-        b = nil
+        b = null
         a.frames.each_with_index (f, i) ->
             b = f if i == pos
         c = a.frames.at(pos)
-        # c.should be_kind_of AviGlitch::Frame
-        assert.equal c.data, b.data
+        assert.instanceOf c, Frame
+        assert.deepEqual c.data, b.data
 
-    it 'can get a first frame ussing first, a last frame using last', ->
+    it 'can get the first / last frame with first() / last()', ->
         a = AviGlitch.open @in
-        b0 = c0 = nil
+        b0 = c0 = null
         a.frames.each_with_index (f, i) ->
             b0 = f if i == 0
-            c0 = f if i == a.frames.length - 1
-        b1 = a.frames.first
-        c1 = a.frames.last
+            c0 = f if i == a.frames.length() - 1
+        b1 = a.frames.first()
+        c1 = a.frames.last()
 
-        assert.equal b1.data, b0.data
-        assert.equal c1.data, c0.data
+        assert.deepEqual b1.data, b0.data
+        assert.deepEqual c1.data, c0.data
 
     it 'can add a frame at last using push', ->
         a = AviGlitch.open @in
-        s = a.frames.length
-        b = a.frames[10]
+        s = a.frames.length()
+        b = a.frames.at(10)
         assert.throws (->
             a.frames.push 100
-        ), /TypeError/
-        c = a.frames + a.frames.slice(10, 1)
+        ), TypeError
+        c = a.frames.concat a.frames.slice(10, 11)
 
         x = a.frames.push b
-        assert.equal a.frames.length, s + 1
-        x.should == a.frames
+        assert.equal a.frames.length(), s + 1
+        assert.equal x, a.frames
         assert.equal a.frames, c
-        assert.equal a.frames.last.data, c.last.data
+        assert.deepEqual a.frames.last().data, c.last().data
         x = a.frames.push b
-        assert.equal a.frames.length s + 2
-        assert.equal x.should, a.frames
+        assert.equal a.frames.length(), s + 2
+        assert.equal x, a.frames
 
         a.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+        assert Base.is_surely_formatted(@out, true)
 
 
     it 'can add a frame at last using <<', ->
@@ -299,6 +299,8 @@ describe 'Frames', ->
         a = AviGlitch.open @in
         a.frames.clear()
         assert.equal a.frames.length, 0
+
+    return
 
     it 'can delete one frame using delete_at', ->
         a = AviGlitch.open @in

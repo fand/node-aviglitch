@@ -267,9 +267,10 @@ class Frames
         #raise TypeError unless frame.kind_of? Frame
 
         # data
-        this_data = new IO 'this'
+        this_data = IO.temp()
         @frames_data_as_io this_data
         this_size = this_data.size()
+        console.error frame.data unless buffer.isBuffer frame.data
         this_data.seek this_size
         this_data.write frame.id
         this_data.write frame.data.length, 'V'

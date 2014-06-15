@@ -21,14 +21,15 @@ class IO
         callback() if callback?
 
     @tmp_id = 0
+    @removeTmp = -> fs.rmdirSync 'tmp'
     @temp = (flags, callback) ->
         unless @has_tmp
             @has_tmp = true
             fs.mkdirSync 'tmp' unless fs.existsSync 'tmp'
-            process.addListener 'exit', ->
-                fs.rmdirSync 'tmp'
-            process.addListener 'error', ->
-                fs.rmdirSync 'tmp'
+            process.removeListener 'exit', @removeTmp
+            process.removeListener 'error', @removeTmp
+            process.addListener 'exit', @removeTmp
+            process.addListener 'error', @removeTmp
 
         tmppath = path.resolve 'tmp', @tmp_id.toString()
         @tmp_id += 1
