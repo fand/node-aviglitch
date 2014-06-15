@@ -200,15 +200,16 @@ class Frames
         r.frames.concat other_frames
         r.frames
 
-    # ##
-    # # Returns the new Frames as a +times+ times repeated concatenation
-    # # of the original Frames.
-    # mul: (times) ->
-    #     result = @slice 0, 0
-    #     frames = @slice 0..-1
-    #     for i in [0...times]
-    #         result.concat frames
-    #     result
+    ##
+    # Returns the new Frames as a +times+ times repeated concatenation
+    # of the original Frames.
+    mul: (times) ->
+        result = @slice 0, 1
+        result.clear()
+        frames = @slice 0, -1
+        for i in [0...times]
+            result.concat frames
+        result
 
     ##
     # Returns the Frame object at the given index or
