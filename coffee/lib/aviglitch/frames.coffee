@@ -151,7 +151,7 @@ class Frames
     # Removes all frames and returns self.
     clear: ->
         @meta = []
-        @overwrite new IO()
+        @overwrite IO.temp()
         this
 
     ##
@@ -159,10 +159,9 @@ class Frames
     # It is destructive like Array does.
     concat: (other_frames) ->
         #raise TypeError unless other_frames.kind_of?(Frames)
+        throw new TypeError() unless other_frames.is_frames?
 
         # data
-        # this_data = new IO 'this'
-        # other_data = new IO 'other'
         this_data  = IO.temp()
         other_data = IO.temp()
 
@@ -181,7 +180,7 @@ class Frames
         other_data.close()
 
         # Concat meta.
-        other_meta = other_frames.meta.filter (m) ->
+        other_meta = other_frames.meta.map (m) ->
             x =
                 offset: m.offset + this_size
                 size:   m.size
@@ -264,18 +263,18 @@ class Frames
     ##
     # Appends the given Frame into the tail of self.
     push: (frame) ->
-        #raise TypeError unless frame.kind_of? Frame
+        throw new TypeError() unless frame.is_frame?
 
         # data
         this_data = IO.temp()
         @frames_data_as_io this_data
         this_size = this_data.size()
-        console.error frame.data unless buffer.isBuffer frame.data
-        this_data.seek this_size
-        this_data.write frame.id
+
+        this_data.seek this_size + 3   # ????
+        this_data.write frame.id, 'a'
         this_data.write frame.data.length, 'V'
         this_data.write frame.data
-        this_data.write "\x00" if frame.data.length % 2 == 1
+        this_data.write new Buffer("\x00") if frame.data.length % 2 == 1
 
         # meta
         @meta.push
@@ -325,7 +324,8 @@ class Frames
         AviGlitch.open @io.fullpath()
 
     inspect: ->
-        "#<#{self.class.name}:#{sprintf("0x%x", object_id)} @io=#{@io.inspect} size=#{self.size}>"
+        # "#<#{@constructor.name }:#{sprintf("0x%x", object_id)} @io=#{@io.inspect} size=#{self.size}>"
+        JSON.stringify @meta.slice(0, 10)
 
     get_head_and_tail: (head, tail) ->
         if head.length?

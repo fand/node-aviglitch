@@ -26,8 +26,8 @@ class IO
         unless @has_tmp
             @has_tmp = true
             fs.mkdirSync 'tmp' unless fs.existsSync 'tmp'
-            process.removeListener 'exit', @removeTmp
-            process.removeListener 'error', @removeTmp
+            process.removeAllListeners()
+            process.removeAllListeners()
             process.addListener 'exit', @removeTmp
             process.addListener 'error', @removeTmp
 

@@ -268,37 +268,36 @@ describe 'Frames', ->
         assert.throws (->
             a.frames.push 100
         ), TypeError
-        c = a.frames.concat a.frames.slice(10, 11)
+        c = a.frames.add a.frames.slice(10, 11)
 
         x = a.frames.push b
         assert.equal a.frames.length(), s + 1
         assert.equal x, a.frames
-        assert.equal a.frames, c
+        assert.deepEqual a.frames.meta, c.meta
         assert.deepEqual a.frames.last().data, c.last().data
         x = a.frames.push b
         assert.equal a.frames.length(), s + 2
         assert.equal x, a.frames
 
         a.output @out
-        assert Base.is_surely_formatted(@out, true)
-
+        assert Base.surely_formatted(@out, true)
 
     it 'can add a frame at last using <<', ->
         a = AviGlitch.open @in
-        s = a.frames.length
-        b = a.frames[10]
+        s = a.frames.length()
+        b = a.frames.at(10)
 
-        x = a.frames << b
-        assert.equal a.frames.length, s + 1
-        assert.equal x == a.frames
+        x = a.frames.push b
+        assert.equal a.frames.length(), s + 1
+        assert.equal x, a.frames
 
         a.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+        assert Base.surely_formatted(@out, true)
 
     it 'can delete all frames using clear', ->
         a = AviGlitch.open @in
         a.frames.clear()
-        assert.equal a.frames.length, 0
+        assert.equal a.frames.length(), 0
 
     return
 
