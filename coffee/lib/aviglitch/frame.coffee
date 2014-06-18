@@ -48,12 +48,12 @@ class Frame
     ##
     # Returns if it is a video frame.
     is_videoframe: ->
-      @id.match /^..d[bc]$/
+      !! @id.match /^..d[bc]$/
 
     ##
     # Returns if it is an audio frame.
     is_audioframe: ->
-      @id.match /^..wb$/
+      !! @id.match /^..wb$/
 
 
 module.exports = Frame

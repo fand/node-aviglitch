@@ -43,8 +43,6 @@ describe 'Frames', ->
             fs.rmdirSync TMP_DIR
             done()
 
-
-
     it 'should save the same file when nothing is changed', ->
         avi = AviGlitch.open @in
         avi.frames.each ->
@@ -62,7 +60,8 @@ describe 'Frames', ->
         avi = AviGlitch.open @in
         avi.frames.each (f) ->
             if f.is_keyframe()
-                f.data = new Buffer(f.data.toString().replace /\d/, '0')
+                f.data = new Buffer(f.data.toString('ascii').replace(/\d/, '0'))
+
         avi.output @out, true, =>
             assert Base.surely_formatted(@out, true)
             done()
@@ -209,16 +208,16 @@ describe 'Frames', ->
         range = [spos, -1]
         d = a.slice(range)
         assert.instanceOf d, Frames
-        assert.equal d.length(), asize - spos
+        assert.equal d.length(), asize - spos - 1
         assert.doesNotThrow (->
             d.each (x) -> x
         )
 
         x = -5
-        range = [spos...x]
+        range = [spos...x]    # gives [spos, x+1] as range
         e = a.slice(range)
         assert.instanceOf e, Frames
-        assert.equal e.length(), asize - spos + x + 3
+        assert.equal e.length(), asize - spos + x + 1
         assert.doesNotThrow (->
             d.each (x) -> x
         )
@@ -231,15 +230,13 @@ describe 'Frames', ->
             b.concat(c)
         assert b.length() ==  5 + (10 * 10)
 
-    it 'can get one single frame using slice(n)', ->
+    it 'can get all frames after n using slice(n)', ->
         a = AviGlitch.open @in
         pos = 10
-        b = null
-        a.frames.each_with_index (f, i) ->
-            b = f if i == pos
+        b = a.frames.slice(pos, a.frames.length())
         c = a.frames.slice(pos)
-        assert.instanceOf c, Frame
-        assert.deepEqual c.data, b.data
+        assert.instanceOf c, Frames
+        assert.deepEqual c.meta, b.meta
 
     it 'can get one single frame using at(n)', ->
         a = AviGlitch.open @in
@@ -302,8 +299,6 @@ describe 'Frames', ->
         a.frames.clear()
         assert.equal a.frames.length(), 0
 
-
-
     it 'can delete one frame using delete_at', ->
         a = AviGlitch.open @in
         l = a.frames.length()
@@ -336,8 +331,7 @@ describe 'Frames', ->
         a = AviGlitch.open @in
         l = a.frames.length()
 
-
-        b = a.frames.slice_save(10)
+        b = a.frames.slice_save(10, 11)
         assert.instanceOf b, Frame
         assert.equal a.frames.length(), l - 1
 
@@ -349,92 +343,113 @@ describe 'Frames', ->
         assert.instanceOf d, Frames
         assert.equal a.frames.length(), l - 1 - 10 - 10
 
-    # it 'can swap frame(s) using swap', ->
-    #     a = AviGlitch.open @in
-    #     l = a.frames.length()
-    #     assert.throws (->
-    #         a.frames.swap 10, "xxx"
-    #     ), /TypeError/
+    it 'provides correct range info with get_head_and_tail', ->
+        a = AviGlitch.open @in
+        f = a.frames
+        assert.deepEqual f.get_head_and_tail(3, 10), [3, 10]
+        assert.deepEqual f.get_head_and_tail(40, -1), [40, f.length() - 1]
+        assert.deepEqual f.get_head_and_tail(10), [10, f.length()]
+        assert.deepEqual f.get_head_and_tail(60, -10), f.get_head_and_tail([60..-10])
+        assert.throws (->
+            f.get_head_and_tail(100, 10)
+        ), RangeError
+        a.close()
 
-    #     b = a.frames.at(20)
-    #     a.frames.swap 10, b
-    #     assert.equal a.frames.length(), 1
-    #     assert.equal a.frames[10].data, b.data
+    it 'can splice frame(s) using splice', ->
+        a = AviGlitch.open @in
+        l = a.frames.length()
+        assert.throws (->
+            a.frames.splice 10, 1, "xxx"
+        ), TypeError
 
-    #     a.output @out
-    #     assert.ok Base.surely_formatted(@out, true)
+        b = a.frames.at(20)
+        a.frames.splice 10, 1, b
+        assert.equal a.frames.length(), l
+        assert.deepEqual a.frames.at(10).data, b.data
 
-    #     a = AviGlitch.open @in
-    #     pl = 5
-    #     pp = 3
-    #     b = a.frames[20...20+pl]
-    #     a.frames[10..(10 + pp)] = b
-    #     assert a.frames.length(), l - pp + pl - 1
-    #     for i in [0...pp]
-    #         assert.equal a.frames.at(10 + i).data, b.at(i).data
+        a.output @out
+        assert.ok Base.surely_formatted(@out, true)
 
-    #     assert.throws (->
-    #         a.frames.swap 10, a.frames.slice(100, 1)
-    #     ), /TypeError/
+        a = AviGlitch.open @in
+        pl = 5
+        pp = 3
 
-    #     a.output @out
-    #     assert.ok Base.surely_formatted(@out, true)
+        b = a.frames.slice 20, 20 + pl
+        a.frames.splice 10, pp, b
 
-    return
+        assert.equal a.frames.length(), l - pp + pl
+        for i in [0...pp]
+            assert.deepEqual a.frames.at(10 + i).data, b.at(i).data
+
+        assert.throws (->
+            a.frames.splice 10, 1, a.frames.slice(100, 1)
+        ), RangeError
+
+        a.output @out
+        assert.ok Base.surely_formatted(@out, true)
 
     it 'can repeat frames using *', ->
         a = AviGlitch.open @in
 
         r = 20
         b = a.frames.slice(10, 20)
-        c = b * r
-        assert.lengthOf c, 10 * r
+        c = b.mul r
+        assert.equal c.length(), 10 * r
 
-        c.to_avi.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
+        c.to_avi().output @out
+        assert.ok Base.surely_formatted(@out, true)
 
     it 'should manipulate frames like array does', ->
         avi = AviGlitch.open @in
         a = avi.frames
-        x = Array.new a.length
+        x = new Array a.length()
 
         fa = a.slice(0, 100)
         fx = x.slice(0, 100)
-        assert.lengthOf fa, fx.length
+        assert.equal fa.length(), fx.length
 
-        fa = a.slice([100..-1])
-        fx = x.slice([100..-1])
-        assert.lengthOf fa, fx.length
+        fa = a.slice(100, -1)
+        fx = x.slice(100, -1)
+        assert.equal fx.length, fa.length()
+        assert.equal fa.length(), fx.length
 
+        # JS Array::slice does not accept array as the argument!
         fa = a.slice([100..-10])
         fx = x.slice([100..-10])
-        assert.lengthOf fa, fx.length
+        assert.equal a.length(), fx.length
+        assert.notEqual fa.length(), fx.length
 
-        fa = a.slice(-200, 10)
-        fx = x.slice(-200, 10)
-        assert.lengthOf fa, fx.length
+        assert.throws ->
+            fa = a.slice(-200, 10)
+        , RangeError
+        assert.doesNotThrow ->
+            fx = x.slice(-200, 10)
+        , RangeError
 
-        a[100] = a.at 200
-        x[100] = x.at 200
-        assert.lengthOf a, x.length
+        a.splice 100, 1, a.at 200
+        x.splice 100, 1, x[200]
+        assert.equal a.length(), x.length
 
-        a[100..150] = a.slice(100, 100)
-        x[100..150] = x.slice(100, 100)
-        assert.lengthOf a, x.length
+        # Do not accept empty frames.
+        a.splice 100, 50, a.slice(100, 100)
+        x.splice 100, 50, x.slice(100, 100)
+        assert.equal a.length(), x.length - 1
 
-    it 'should have the method alias to slice as []', ->
-        a = AviGlitch.open @in
+    ##
+    # JS cannot overload [].
+    # it 'should have the method alias to slice as []', ->
+    #     a = AviGlitch.open @in
 
-        b = a.frames[10]
-        # b.should be_kind_of AviGlitch::Frame
+    #     b = a.frames[10]
+    #     # b.should be_kind_of AviGlitch::Frame
 
-        c = a.frames[0...10]
-        # c.should be_kind_of AviGlitch::Frames
-        assert.lengthOf c, 10
+    #     c = a.frames[0...10]
+    #     # c.should be_kind_of AviGlitch::Frames
+    #     assert.lengthOf c, 10
 
-        d = a.frames[0..9]
-        # d.should be_kind_of AviGlitch::Frames
-        assert.lengthOf d, 10
+    #     d = a.frames[0..9]
+    #     # d.should be_kind_of AviGlitch::Frames
+    #     assert.lengthOf d, 10
 
     it 'should return nil when getting a frame at out-of-range index', ->
         a = AviGlitch.open @in
@@ -461,7 +476,6 @@ describe 'Frames', ->
         a = AviGlitch.open @out
         a.frames.each (f) ->
             assert.isFalse f.is_keyframe()
-        end
 
         a = AviGlitch.open @in
         a.frames.mutate_keyframes_into_deltaframes [0..50]
@@ -471,17 +485,19 @@ describe 'Frames', ->
             if i <= 50
                 assert.isFalse f.is_keyframe()
 
-    it 'should return Enumerator with #each', ->
+    it 'should return function with #each', ->
         a = AviGlitch.open @in
-        enumerate = a.frames.each
-        enumerate.each (f, i) ->
+        enumerate = (callback) -> a.frames.each callback
+        enumerate (f, i) ->
             if f.is_keyframe()
-                f.data = f.data.replace(/\d/, '')
+                f.data = new Buffer(f.data.toString('ascii').replace /\d/, '')
 
         a.output @out
-        assert.ok Base.is_surely_formatted(@out, true)
-        asssert.ok File.size(@out) < File.size(@in)
+        assert Base.surely_formatted(@out, true)
 
+        in_size = fs.statSync(@in).size
+        out_size = fs.statSync(@out).size
+        assert fs.statSync(@out).size < fs.statSync(@in).size
 
     # it 'should use Enumerator as an external iterator',
     #       :skip => Gem::Version.new(RUBY_VERSION.dup) < Gem::Version.new('1.9.0') || RUBY_PLATFORM == 'java' do
@@ -523,25 +539,25 @@ describe 'Frames', ->
 
         kc = dc = vc = ac = 0
         a.frames.each (x) ->
-            vc += if x.is_videoframe then 1 else 0
-            kc += if x.is_keyframe then 1 else 0
-            dc += if x.is_deltaframe then 1 else 0
-            ac += if x.is_audioframe then 1 else 0
+            vc += if x.is_videoframe() then 1 else 0
+            kc += if x.is_keyframe() then 1 else 0
+            dc += if x.is_deltaframe() then 1 else 0
+            ac += if x.is_audioframe() then 1 else 0
 
         a.close()
 
-        assert kc1 == kc
-        assert kc2 == kc
-        assert kc3 == kc
-        assert kc4 == kc
+        assert.equal kc1, kc
+        assert.equal kc2, kc
+        assert.equal kc3, kc
+        assert.equal kc4, kc
 
-        assert dc1 == dc
-        assert dc2 == dc
-        assert dc3 == dc
-        assert dc4 == dc
+        assert.equal dc1, dc
+        assert.equal dc2, dc
+        assert.equal dc3, dc
+        assert.equal dc4, dc
 
-        assert vc1 == vc
-        assert vc2 == vc
+        assert.equal vc1, vc
+        assert.equal vc2, vc
 
-        assert ac1 == ac
-        assert ac2 == ac
+        assert.equal ac1, ac
+        assert.equal ac2, ac

@@ -81,9 +81,9 @@ class Frames
     size_of: (frame_type) ->
         detection = "is_" + frame_type.toString().replace(/frames$/, "frame")
         filtered = @meta.filter (m) ->
-            f = new Frame(new Buffer(), m.id, m.flag)
+            f = new Frame(new Buffer(0), m.id, m.flag)
             f[detection]()
-        filtered.length
+        return filtered.length
 
     frames_data_as_io: (io_dst, callback) ->
         io_dst = new IO 'temp' unless io_dst?
@@ -206,20 +206,19 @@ class Frames
     mul: (times) ->
         result = @slice 0, 1
         result.clear()
-        frames = @slice 0, -1
+        frames = @slice 0
         for i in [0...times]
             result.concat frames
-        result
+        return result
 
     ##
     # Returns the Frame object at the given index or
     # returns new Frames object that sliced with the given index and length
     # or with the Range.
-    # Just like Array.
-    slice: (head, tail, as_frames = false) ->
-        return @at head unless head.length? or tail?
+    # Just like JS Array, not a Ruby Array.
+    slice: (head, tail) ->
+        # return @at head unless head.length? or tail?  # Ruby like Array needs this line.
         [head, tail] = @get_head_and_tail head, tail    # allow negative tail.
-        count = 0
         r = @to_avi()
         r.frames.each_with_index (f, i) ->
             unless head <= i && i < tail
@@ -233,14 +232,49 @@ class Frames
         [head, tail] = @get_head_and_tail head, tail
         length = tail - head
         [header, sliced, footer] = []
-        sliced = if length > 1 then @slice(head, tail) else @slice(head)
+        sliced = if length > 1 then @slice(head, tail) else @at(head)
         header = @slice(0, head)
         length = 1 unless length?
-        footer = @slice(tail, -1)
+        footer = @slice(tail)
         @clear()
         @concat header
         @concat footer
         return sliced
+
+    ##
+    # Removes frame(s) at the given index or the range (same as []).
+    # Inserts the given Frame or Frames's contents into the removed index.
+    splice: (index, howmany) ->
+        offset = if Array.isArray index then 1 else 2
+        _replacements = (arguments[i] for i in [offset...arguments.length])
+        replacements = []
+        is_array = false
+        for r in _replacements
+            if r.is_frames? or r.is_frame?
+                replacements.push r
+            else
+                if Array.isArray r
+                    for rr in r
+                        unless rr.is_frames? or rr.is_frame?
+                            throw new TypeError('Cannot splice frames with non-frame objects.')
+                        replacements.push rr
+                else
+                    throw new TypeError('Cannot splice frames with non-frame objects.')
+
+        [head, tail] = [index, index + howmany]
+
+        header = @slice 0, head
+        footer = @slice tail
+
+        for r in replacements
+            if r.is_frame?
+                header.push r
+            else
+                header.concat r
+
+        new_frames = header.add footer
+        @clear()
+        @concat new_frames
 
     ##
     # Returns one Frame object at the given index.
@@ -254,11 +288,11 @@ class Frames
 
     ##
     # Returns the first Frame object.
-    first: -> @slice(0)
+    first: -> @at(0)
 
     ##
     # Returns the last Frame object.
-    last: -> @slice(@length() - 1)
+    last: -> @at(@length() - 1)
 
     ##
     # Appends the given Frame into the tail of self.
@@ -296,18 +330,18 @@ class Frames
         for i in [1...arguments.length]
             new_frames.push arguments[i]
 
-        new_frames.concat @slice(n, -1)
+        new_frames.concat @slice(n)
         @clear()
         @concat new_frames
         return this
 
     ##
     # Deletes one Frame at the given index.
-    delete_at: (n) -> @slice_save n
+    delete_at: (n) -> @slice_save n, n+1
 
     ##
     # Mutates keyframes into deltaframes at given range, or all.
-    mutate_keyframes_into_deltaframes: (range = nil) ->
+    mutate_keyframes_into_deltaframes: (range = null) ->
         range = [0...@size()] unless range?
         @each_with_index (frame, i) ->
             if i in range and frame.is_keyframe()
@@ -331,13 +365,16 @@ class Frames
     get_head_and_tail: (head, tail) ->
         if head.length?
             [head, tail] = [head[0], head[head.length - 1] + 1]
-            tail -= 1 if tail == 0
+            tail -= 1 if tail <= 0
         head = if head >= 0 then head else @meta.length + head
         if tail?
             if tail < 0
-                tail = @meta.length + tail + 1
+                tail = @meta.length + tail
+            else if tail < head
+                # JS Array::slice does not raise Error in such case...
+                throw new RangeError('Wrong range passed.')
         else
-            tail = head + 1
+            tail = @meta.length
         return [head, tail]
 
     safe_frames_count: (count) ->
