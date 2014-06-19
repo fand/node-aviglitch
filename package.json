@@ -4,6 +4,7 @@
   "description": "A port of aviglitch rubygem by ucnv.",
   "main": "index.js",
   "dependencies": {
+    "commander": "^2.2.0",
     "fs-extra": "^0.9.1",
     "mocha": "^1.20.1",
     "optimist": "^0.6.1"
