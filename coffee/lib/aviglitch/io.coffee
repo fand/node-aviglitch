@@ -28,8 +28,8 @@ class IO
             fs.mkdirSync 'tmp' unless fs.existsSync 'tmp'
             process.removeAllListeners()
             process.removeAllListeners()
-            process.addListener 'exit', @removeTmp
-            process.addListener 'error', @removeTmp
+            # process.addListener 'exit', @removeTmp
+            # process.addListener 'error', @removeTmp
 
         tmppath = path.resolve 'tmp', @tmp_id.toString()
         @tmp_id += 1

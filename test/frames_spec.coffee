@@ -3,7 +3,7 @@ assert = require('chai').assert
 
 fs = require 'fs'
 path = require 'path'
-#helper = require path.join __dirname, '/spec_helper'
+
 FILES_DIR = path.join __dirname, 'files'
 OUTPUT_DIR = path.join FILES_DIR, 'output'
 TMP_DIR = 'tmp'
@@ -26,6 +26,7 @@ describe 'Frames', ->
             id
 
         fs.mkdirSync OUTPUT_DIR unless fs.existsSync OUTPUT_DIR
+        fs.mkdirSync TMP_DIR unless fs.existsSync TMP_DIR
         @in = path.join FILES_DIR, 'sample.avi'
         @out = path.join OUTPUT_DIR, 'out.avi'
 

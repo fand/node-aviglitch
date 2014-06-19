@@ -2,48 +2,42 @@
 # Generate datamoshing
 
 fs = require 'fs'
-argv = require('optimist').argv
+path = require 'path'
+argv = require('commander')
 AviGlitch = require '../lib/aviglitch'
 
-output = './coffee.avi'
+output = 'out.avi'
 all = false
 fake = false
 
-# opts = OptionParser.new do |opts|
-#   opts.banner = "datamosh - AviGlitch's datamoshing video generator."
-#   opts.define_head "Usage: #{File.basename($0)} [options] file [file2 ...]"
-#   opts.separator "Options:"
-#   opts.on("-o", "--output [OUTPUT]",
-#     "Output the video to OUTPUT (./out.avi by default)") do |f|
-#     output = f
-#   end
-#   opts.on("-a", "--all",
-#     "Remove all keyframes (It remains a first keyframe by default)") do
-#     all = true
-#   end
-#   opts.on("--fake", "Remains all keyframes as full pixel included deltaframe") do
-#     fake = true
-#     if all
-#       warn "The --fake option cannot use with -a/--all option.\n"
-#       exit
-#     end
-#   end
-#   opts.on_tail("-h", "--help", "Show this message") do
-#     puts opts
-#     exit
-#   end
-# end
 
-input = argv._
-if input.length == 0
-    console.log argv
+command = require('commander')
+command
+    .usage('[options] <file ...>')
+    .version('0.0.0')
+    .option('-o, --output [OUTPUT]', 'output the video to OUTPUT (./out.avi by default)', (val) ->
+        output = val
+    )
+    .option('-a, --all', 'remove all keyframes (It remains a first keyframe by default)', ->
+        all = true
+    )
+    .option('-f, --fake', 'remains all keyframes as full pixel included deltaframe', ->
+        if all
+            console.error "The --fake option cannot use with -a/--all option.\n"
+            process.exit(-1)
+        fake = true
+    )
+    .parse(process.argv)
+
+# Check input files.
+input = command.args
+if input.length < 1
+    command.help()
     process.exit()
-else
-    for file in input
-        if !fs.existsSync(file) || fs.lstatSync(file).isDirectory()
-            opts.banner = "#{file}: No such file.\n\n"
-            console.log argv
-            process.exit 1
+for file in input
+    if !fs.existsSync(file) || fs.lstatSync(file).isDirectory()
+        console.error "#{file}: No such file.\n\n"
+        process.exit 1
 
 a = AviGlitch.open input.shift()
 
@@ -56,21 +50,19 @@ unless fake
         else
             new Buffer(0) # keep the first frame
 
-# if !all && !fake
-#     a.mutate_keyframes_into_deltaframes([1...a.frames.length])
-# else
-#     a.mutate_keyframes_into_deltaframes()
+unless all or fake
+    a.mutate_keyframes_into_deltaframes([1...a.frames.length()])
+else
+    a.mutate_keyframes_into_deltaframes()
 
-# input.each do |file|
-#   b = AviGlitch.open file
-#   unless fake
-#     b.glitch :keyframe do |frame|
-#       ""
-#     end
-#   end
-#   b.mutate_keyframes_into_deltaframes!
-#   a.frames.concat b.frames
-# end
+for file in input
+    b = AviGlitch.open file
+    unless fake
+        b.glitch 'keyframe', -> new Buffer(0)
 
-a.output output
-process.exit()
+    b.mutate_keyframes_into_deltaframes()
+    a.frames.concat b.frames
+
+dst = path.resolve __dirname, '..', output
+a.output dst, null, ->
+    process.exit()

@@ -12,12 +12,12 @@ gulp.task('coffee', function () {
 
 gulp.task('test', function () {
   require('coffee-script/register');
-  gulp.src('test/*.coffee')
+  return gulp.src('test/*.coffee')
     .pipe(plumber())
     .pipe(mocha({
       ui: 'bdd',
       reporter: 'spec',
-      timeout: 10000
+      timeout: 100000
     }));
 });
 
@@ -30,4 +30,4 @@ gulp.task('watch', function () {
   gulp.watch('coffee/lib/**/*.coffee', ['watch-coffee']);
   gulp.watch('test/*.coffee', ['test']);
 });
-gulp.task('default', ['watch']);
+gulp.task('default', ['coffee', 'watch']);

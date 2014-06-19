@@ -19,6 +19,7 @@ class Base
     # It requires +path+ as Pathname.
     constructor: (path) ->
         f = new IO path, 'r'
+        @is_base = true
 
         # copy as tempfile
         @file = IO.temp 'w+'
@@ -105,7 +106,7 @@ class Base
     ##
     # Mutates all (or in +range+) keyframes into deltaframes.
     # It's an alias for Frames#mutate_keyframes_into_deltaframes!
-    mutate_keyframes_into_deltaframes:  (range = nil) ->
+    mutate_keyframes_into_deltaframes:  (range = null) ->
         @frames.mutate_keyframes_into_deltaframes range
         return this
 
@@ -113,10 +114,9 @@ class Base
     # Check if it has keyframes.
     has_keyframe: ->
         result = false
-        for f in @frames
+        @frames.each (f) =>
             if f.is_keyframe()
                 result = true
-                break
         return result
 
     # alias_method :has_keyframes, :has_keyframe
