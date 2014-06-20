@@ -10,9 +10,9 @@ AviGlitch destroys your AVI files.
 ```javascript
   var AviGlitch = require('aviglitch');
 
-  var avi = AviGlitch.open('/path/to/your.avi')
-  avi.glitch('keyframe', function(data){
-    data.replace(/\d/, '0');
+  var avi = AviGlitch.open('/path/to/your.avi');
+  avi.glitch('keyframe', function(frame){
+    new Buffer(frame.toString('ascii').replace(/\d/, ''));
   })
   avi.output('/path/to/broken.avi');
 ```
