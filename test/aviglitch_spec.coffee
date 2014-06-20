@@ -48,7 +48,7 @@ describe 'AviGlitch', ->
         avi = AviGlitch.open @in
         avi.glitch (d) ->  d
         avi.output @out
-        # assert FileUtils.cmp(@in, @out)
+
         f_in = fs.readFileSync @in
         f_out = fs.readFileSync @out
         assert f_in?, 'in file exists'
@@ -117,7 +117,6 @@ describe 'AviGlitch', ->
             ), Error
             done()
 
-
     it 'can explicit close file', (done) ->
         avi = AviGlitch.open @in
         avi.close ->
@@ -152,16 +151,18 @@ describe 'AviGlitch', ->
 
         assert Base.surely_formatted(@out, true)
 
-    it 'can work with another frames instance', ->
+    it 'can work with another frames instance', (done) ->
+        tmp = @out + 'x.avi'
         a = AviGlitch.open @in
         a.glitch 'keyframe', (d) -> null
-        a.output(@out.to_s + 'x.avi')
+        a.output tmp, false
         b = AviGlitch.open @in
-        c = AviGlitch.open(@out.to_s + 'x.avi')
+        c = AviGlitch.open tmp
         b.frames = c.frames
-        b.output @out
+        b.output @out, false
 
         assert Base.surely_formatted(@out, true)
+        a.close -> b.close -> c.close -> fs.unlink tmp, -> done()
 
     it 'should mutate keyframes into deltaframes', ->
         a = AviGlitch.open @in

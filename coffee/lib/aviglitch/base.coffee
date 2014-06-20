@@ -54,6 +54,7 @@ class Base
     ##
     # An explicit file close.
     close: (callback) -> @file.close(callback)
+    closeSync: -> @file.closeSync()
 
     ##
     # Glitches each frame data.
