@@ -1,7 +1,7 @@
 # AviGlitch
 [![Build Status](https://travis-ci.org/fand/aviglitch.svg?branch=master)](https://travis-ci.org/fand/aviglitch)
 
-A fork of ruby [AviGlitch](http://github.com/ucnv/aviglitch) gem.
+A fork of ruby [AviGlitch](http://github.com/ucnv/aviglitch) gem by ucnv.
 
 AviGlitch destroys your AVI files.
 
