@@ -84,13 +84,13 @@ describe 'Frames', ->
         assert.equal out_frame_size, in_frame_size - rem_count
         avi.close()
 
-    # it 'should read correct positions in #each', ->
-    #     avi = AviGlitch.open @in
-    #     frames = avi.frames
-    #     frames.each (f) ->
-    #         real_id = frames.get_real_id_with f
-    #         assert real_id ==  f.id
-    #     avi.close()
+    it 'should read correct positions in #each', (done) ->
+        avi = AviGlitch.open @in
+        frames = avi.frames
+        frames.each (f) ->
+            real_id = frames.get_real_id_with f
+            assert.equal real_id, f.id
+        avi.close -> done()
 
     it 'should promise the read frame data is not nil', ->
         avi = AviGlitch.open @in
@@ -98,15 +98,6 @@ describe 'Frames', ->
         frames.each (f) ->
             assert f.data != null
         avi.close()
-
-    # No private property for JavaScript objects.
-    # it 'should hide the inner variables', ->
-    #     avi = AviGlitch.open @in
-    #     frames = avi.frames
-    #     assert.throws (-> frames.meta()), /NoMethodError/
-    #     assert.throws (-> frames.io()), /NoMethodError/
-    #     assert.throws (-> frames.frames_data_as_io()), /NoMethodError/
-    #     avi.close()
 
     it 'should save video frames count in header', (done) ->
         avi = AviGlitch.open @in
@@ -131,7 +122,6 @@ describe 'Frames', ->
         b = a.frames.slice(0, 10)
         c = b.to_avi()
 
-        # How can I do this?
         assert.instanceOf c, Base
 
         c.output @out, false
@@ -153,23 +143,6 @@ describe 'Frames', ->
         a.output @out
         b.close()
         assert Base.surely_formatted(@out, true)
-
-    # Cannot overlaod operand in JS!
-    # it 'can concat with other Frames instance with +', ->
-    #     a = AviGlitch.open @in
-    #     b = AviGlitch.open @in
-    #     asize = a.frames.length
-    #     bsize = b.frames.length
-    #     c = a.frames + b.frames
-    #     assert a.frames.length() == asize
-    #     assert b.frames.length() == bsize
-    #     # c.should be_kind_of AviGlitch::Frames
-    #     assert c.length() == asize + bsize
-    #     a.close()
-    #     b.close()
-    #     d = AviGlitch.open c
-    #     d.output @out
-    #     assert.ok Base.surely_formatted?(@out, true)
 
     it 'can slice frames using start pos and length', ->
         avi = AviGlitch.open @in
@@ -443,22 +416,6 @@ describe 'Frames', ->
 
         avi.close -> done()
 
-    ##
-    # JS cannot overload [].
-    # it 'should have the method alias to slice as []', ->
-    #     a = AviGlitch.open @in
-
-    #     b = a.frames[10]
-    #     # b.should be_kind_of AviGlitch::Frame
-
-    #     c = a.frames[0...10]
-    #     # c.should be_kind_of AviGlitch::Frames
-    #     assert.lengthOf c, 10
-
-    #     d = a.frames[0..9]
-    #     # d.should be_kind_of AviGlitch::Frames
-    #     assert.lengthOf d, 10
-
     it 'should return nil when getting a frame at out-of-range index', (done) ->
         a = AviGlitch.open @in
 
@@ -513,24 +470,6 @@ describe 'Frames', ->
         in_size = fs.statSync(@in).size
         out_size = fs.statSync(@out).size
         assert fs.statSync(@out).size < fs.statSync(@in).size
-
-    # it 'should use Enumerator as an external iterator',
-    #       :skip => Gem::Version.new(RUBY_VERSION.dup) < Gem::Version.new('1.9.0') || RUBY_PLATFORM == 'java' do
-    #     a = AviGlitch.open @in
-    #     e = a.frames.each
-    #     expect {
-    #         while f = e.next do
-    #             expect(f).to be_a(AviGlitch::Frame)
-    #             if f.is_keyframe?
-    #                 f.data = f.data.gsub(/\d/, '')
-    #             end
-    #         end
-    #     }.to raise_error(StopIteration)
-    #     a.output @out
-    #     assert.ok Base.is_surely_formatted(@out, true)
-    #     expect(File.size(@out)).to be < File.size(@in)
-    # end
-
 
     it 'should count the size of specific frames', ->
         a = AviGlitch.open @in

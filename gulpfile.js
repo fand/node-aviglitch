@@ -30,4 +30,4 @@ gulp.task('watch', function () {
   gulp.watch('coffee/lib/**/*.coffee', ['watch-coffee']);
   gulp.watch('test/*.coffee', ['test']);
 });
-gulp.task('default', ['coffee', 'watch']);
+gulp.task('default', ['coffee', 'test-coffee']);

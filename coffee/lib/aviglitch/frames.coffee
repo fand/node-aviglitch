@@ -23,8 +23,6 @@ class Frames
     SAFE_FRAMES_COUNT = 150000
     @warn_if_frames_are_too_large = true
 
-    # attr_reader :meta
-
     ##
     # Creates a new AviGlitch::Frames object.
     constructor: (@io) ->
@@ -394,9 +392,8 @@ class Frames
                 return r
         return r
 
-
     fix_offsets_if_needed: (io) ->
-        # rarely data offsets begin from 0 of the file
+        # Rarely data offsets begin from 0 of the file.
         return if @meta.length == 0
         pos = @io.pos
         m = @meta[0]
@@ -404,11 +401,6 @@ class Frames
         unless io.read(4, 'a') == m.id
             x.offset -= @pos_of_movi for x in @meta.each
         io.seek pos
-
-
-    # protected :frames_data_as_io, :meta
-    # private :overwrite, :get_head_and_length, :fix_offsets_if_needed
-
 
     equal: (that) ->
         return false unless that.is_frames?
