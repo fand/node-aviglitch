@@ -1,5 +1,5 @@
 # AviGlitch
-[![Build Status](https://travis-ci.org/fand/aviglitch.svg?branch=master)](https://travis-ci.org/fand/aviglitch)
+[![Build Status](https://travis-ci.org/fand/node-aviglitch.svg?branch=master)](https://travis-ci.org/fand/node-aviglitch)
 
 A fork of ruby [AviGlitch](http://github.com/ucnv/aviglitch) gem by ucnv.
 
@@ -10,9 +10,9 @@ AviGlitch destroys your AVI files.
 ```javascript
   var AviGlitch = require('aviglitch');
 
-  var avi = AviGlitch.open('/path/to/your.avi')
-  avi.glitch('keyframe', function(data){
-    data.replace(/\d/, '0');
+  var avi = AviGlitch.open('/path/to/your.avi');
+  avi.glitch('keyframe', function(frame){
+    new Buffer(frame.toString('ascii').replace(/\d/, ''));
   })
   avi.output('/path/to/broken.avi');
 ```
