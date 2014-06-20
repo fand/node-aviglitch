@@ -19,6 +19,7 @@ describe 'datamosh cli', ->
 
     before ->
         fs.mkdirSync OUTPUT_DIR unless fs.existsSync OUTPUT_DIR
+        fs.mkdirSync TMP_DIR unless fs.existsSync TMP_DIR
         @in = path.join FILES_DIR, 'sample.avi'
         @out = path.join OUTPUT_DIR, 'out.avi'
         datamosh = path.resolve __dirname, '..', 'bin/datamosh'

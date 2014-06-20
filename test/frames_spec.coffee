@@ -47,7 +47,7 @@ describe 'Frames', ->
     it 'should save the same file when nothing is changed', ->
         avi = AviGlitch.open @in
         avi.frames.each ->
-        avi.output @out
+        avi.output @out, false
         # FileUtils.cmp(@in, @out).should be true
         assert fs.existsSync @out, 'out.avi exists'
         f_in = fs.readFileSync @in
@@ -113,22 +113,20 @@ describe 'Frames', ->
         c = 0
         avi.frames.each (f) ->
             c += 1 if f.is_videoframe()
-        avi.output @out
+        avi.output @out, false
         fs.readFile @out, (err, data) ->
             throw err if err
             data = new Buffer(data) unless Buffer.isBuffer data
             assert.equal data.readUInt32LE(48), c, 'frames count in header is correct'
-            done()
-            avi.close()
+            avi.close -> done()
 
-    it 'should evaluate the equality with owned contents', ->
+    it 'should evaluate the equality with owned contents', (done) ->
         a = AviGlitch.open @in
         b = AviGlitch.open @in
         assert a.frames.equal b.frames
-        a.close()
-        b.close()
+        a.close -> b.close -> done()
 
-    it 'can generate AviGlitch::Base instance', ->
+    it 'can generate AviGlitch::Base instance', (done) ->
         a = AviGlitch.open @in
         b = a.frames.slice(0, 10)
         c = b.to_avi()
@@ -136,8 +134,9 @@ describe 'Frames', ->
         # How can I do this?
         assert.instanceOf c, Base
 
-        c.output @out
+        c.output @out, false
         assert.ok Base.surely_formatted(@out, true)
+        a.close -> c.close -> done()
 
     it 'can concat with other Frames instance with #concat, destructively', ->
         a = AviGlitch.open @in
@@ -191,7 +190,7 @@ describe 'Frames', ->
         avi.output @out
         assert Base.surely_formatted?(@out, true)
 
-    it 'can slice frames using Range as an Array', ->
+    it 'can slice frames using Range as an Array', (done) ->
         avi = AviGlitch.open @in
         a = avi.frames
         asize = a.length()
@@ -201,27 +200,26 @@ describe 'Frames', ->
         b = a.slice(range)
         assert.instanceOf b, Frames
         assert.equal b.length(), c
-        assert.doesNotThrow (->
+        assert.doesNotThrow ->
             b.each (x) -> x
-        )
 
         # negative value to represent the distance from last.
         range = [spos, -1]
         d = a.slice(range)
         assert.instanceOf d, Frames
         assert.equal d.length(), asize - spos - 1
-        assert.doesNotThrow (->
+        assert.doesNotThrow ->
             d.each (x) -> x
-        )
 
         x = -5
         range = [spos...x]    # gives [spos, x+1] as range
         e = a.slice(range)
         assert.instanceOf e, Frames
         assert.equal e.length(), asize - spos + x + 1
-        assert.doesNotThrow (->
+        assert.doesNotThrow ->
             d.each (x) -> x
-        )
+
+        avi.close -> done()
 
     it 'can concat repeatedly the same sliced frames', ->
         a = AviGlitch.open @in
@@ -231,15 +229,16 @@ describe 'Frames', ->
             b.concat(c)
         assert b.length() ==  5 + (10 * 10)
 
-    it 'can get all frames after n using slice(n)', ->
+    it 'can get all frames after n using slice(n)', (done) ->
         a = AviGlitch.open @in
         pos = 10
         b = a.frames.slice(pos, a.frames.length())
         c = a.frames.slice(pos)
         assert.instanceOf c, Frames
         assert.deepEqual c.meta, b.meta
+        a.close -> done()
 
-    it 'can get one single frame using at(n)', ->
+    it 'can get one single frame using at(n)', (done) ->
         a = AviGlitch.open @in
         pos = 10
         b = null
@@ -248,8 +247,9 @@ describe 'Frames', ->
         c = a.frames.at(pos)
         assert.instanceOf c, Frame
         assert.deepEqual c.data, b.data
+        a.close -> done()
 
-    it 'can get the first / last frame with first() / last()', ->
+    it 'can get the first / last frame with first() / last()', (done) ->
         a = AviGlitch.open @in
         b0 = c0 = null
         a.frames.each_with_index (f, i) ->
@@ -260,6 +260,7 @@ describe 'Frames', ->
 
         assert.deepEqual b1.data, b0.data
         assert.deepEqual c1.data, c0.data
+        a.close -> done()
 
     it 'can add a frame at last using push', ->
         a = AviGlitch.open @in
@@ -295,10 +296,11 @@ describe 'Frames', ->
         a.output @out
         assert Base.surely_formatted(@out, true)
 
-    it 'can delete all frames using clear', ->
+    it 'can delete all frames using clear', (done) ->
         a = AviGlitch.open @in
         a.frames.clear()
         assert.equal a.frames.length(), 0
+        a.close -> done()
 
     it 'can delete one frame using delete_at', ->
         a = AviGlitch.open @in
@@ -328,7 +330,7 @@ describe 'Frames', ->
         a.output @out
         assert.ok Base.surely_formatted(@out, true)
 
-    it 'can slice frames destructively using slice_save', ->
+    it 'can slice frames destructively using slice_save', (done) ->
         a = AviGlitch.open @in
         l = a.frames.length()
 
@@ -343,8 +345,9 @@ describe 'Frames', ->
         d = a.frames.slice_save([0...10])
         assert.instanceOf d, Frames
         assert.equal a.frames.length(), l - 1 - 10 - 10
+        a.close -> done()
 
-    it 'provides correct range info with get_head_and_tail', ->
+    it 'provides correct range info with get_head_and_tail', (done) ->
         a = AviGlitch.open @in
         f = a.frames
         assert.deepEqual f.get_head_and_tail(3, 10), [3, 10]
@@ -354,7 +357,7 @@ describe 'Frames', ->
         assert.throws (->
             f.get_head_and_tail(100, 10)
         ), RangeError
-        a.close()
+        a.close -> done()
 
     it 'can splice frame(s) using splice', ->
         a = AviGlitch.open @in
@@ -368,8 +371,9 @@ describe 'Frames', ->
         assert.equal a.frames.length(), l
         assert.deepEqual a.frames.at(10).data, b.data
 
-        a.output @out
+        a.output @out, false
         assert.ok Base.surely_formatted(@out, true)
+        a.closeSync()
 
         a = AviGlitch.open @in
         pl = 5
@@ -389,7 +393,7 @@ describe 'Frames', ->
         a.output @out
         assert.ok Base.surely_formatted(@out, true)
 
-    it 'can repeat frames using *', ->
+    it 'can repeat frames using mul', (done) ->
         a = AviGlitch.open @in
 
         r = 20
@@ -399,8 +403,9 @@ describe 'Frames', ->
 
         c.to_avi().output @out
         assert.ok Base.surely_formatted(@out, true)
+        a.close -> done()
 
-    it 'should manipulate frames like array does', ->
+    it 'should manipulate frames like array does', (done) ->
         avi = AviGlitch.open @in
         a = avi.frames
         x = new Array a.length()
@@ -436,6 +441,8 @@ describe 'Frames', ->
         x.splice 100, 50, x.slice(100, 100)
         assert.equal a.length(), x.length - 1
 
+        avi.close -> done()
+
     ##
     # JS cannot overload [].
     # it 'should have the method alias to slice as []', ->
@@ -452,25 +459,30 @@ describe 'Frames', ->
     #     # d.should be_kind_of AviGlitch::Frames
     #     assert.lengthOf d, 10
 
-    it 'should return nil when getting a frame at out-of-range index', ->
+    it 'should return nil when getting a frame at out-of-range index', (done) ->
         a = AviGlitch.open @in
 
         x = a.frames.at(a.frames.length + 1)
         assert.isNull x
+        a.close -> done()
 
-    it 'can modify frame flag and frame id', ->
+    it 'can modify frame flag and frame id', (done) ->
         a = AviGlitch.open @in
         a.frames.each (f) ->
             f.flag = 0
             f.id = "02dc"
 
-        a.output @out
+        a.output @out, false
+        a.closeSync()
+
         a = AviGlitch.open @out
         a.frames.each (f) ->
             assert.equal f.flag, 0
             assert.equal f.id, "02dc"
 
-    it 'should mutate keyframes into deltaframe', ->
+        a.close -> done()
+
+    it 'should mutate keyframes into deltaframe', (done) ->
         a = AviGlitch.open @in
         a.frames.mutate_keyframes_into_deltaframes()
         a.output @out
@@ -480,11 +492,13 @@ describe 'Frames', ->
 
         a = AviGlitch.open @in
         a.frames.mutate_keyframes_into_deltaframes [0..50]
-        a.output @out
+        a.output @out, false
+        a.closeSync()
         a = AviGlitch.open @out
         a.frames.each_with_index (f, i) ->
             if i <= 50
                 assert.isFalse f.is_keyframe()
+        a.close -> done()
 
     it 'should return function with #each', ->
         a = AviGlitch.open @in
@@ -545,7 +559,7 @@ describe 'Frames', ->
             dc += if x.is_deltaframe() then 1 else 0
             ac += if x.is_audioframe() then 1 else 0
 
-        a.close()
+        a.closeSync()
 
         assert.equal kc1, kc
         assert.equal kc2, kc
