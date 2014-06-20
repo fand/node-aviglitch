@@ -18,7 +18,8 @@
     "mocha": "^1.20.1"
   },
   "scripts": {
-    "test": "node_modules/.bin/gulp"
+    "test": "node_modules/.bin/gulp",
+    "prepublish": "node_modules/.bin/gulp coffee"
   },
   "bin": {
     "datamosh": "./bin/datamosh.js"
