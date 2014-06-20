@@ -12,13 +12,16 @@ gulp.task('coffee', function () {
 
 gulp.task('test', function () {
   require('coffee-script/register');
-  gulp.src('test/*.coffee')
+  return gulp.src('test/*.coffee')
     .pipe(plumber())
     .pipe(mocha({
       ui: 'bdd',
       reporter: 'spec',
       timeout: 100000
-    }));
+    }))
+    .once('end', function () {
+      process.exit();
+    });
 });
 
 gulp.task('test-coffee', ['coffee'], function () {
