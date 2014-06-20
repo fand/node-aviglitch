@@ -62,11 +62,13 @@ class IO
         else
             buf = data
             size = buf.length
-        console.log data if !Buffer.isBuffer(data) and !format?
+        throw new TypeError 'IO#write requires the data format with a buffer' if !Buffer.isBuffer(data) and !format?
         @pos += fs.writeSync @fd, buf, 0, buf.length, @pos
 
     close: (callback) ->
-        fs.close @fd, -> callback() if callback?
+        fs.close @fd, (err) ->
+            throw err if err
+            callback() if callback?
 
     closeSync: ->
         fs.closeSync @fd

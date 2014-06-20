@@ -48,7 +48,7 @@ class Base
         return this
 
     # alias_method :write, :output
-    write: -> @output(arguments)
+    write: -> @output(arguments[0])
 
 
     ##
@@ -70,38 +70,55 @@ class Base
     # as a String parameter.
     # To modify the data, simply return a modified data.
     # With a block it returns Enumerator, without a block it returns +self+.
-    glitch: (target = 'all', callback) ->
-        return null unless callback?
-        @frames.each (frame) =>
-            if @valid_target target, frame
-                # data = callback frame
-                # frame.data = if data? then data else new Buffer(0)
-                data = callback frame
-                if data? or data == null
-                    data
+    glitch: (target = 'all', _callback) ->
+        if typeof target != 'string' and !_callback?
+            _callback = target
+            target = 'all'
+
+        wrapper = (callback) =>
+            @frames.each (frame) =>
+                if @valid_target target, frame
+                    # data = callback frame
+                    # frame.data = if data? then data else new Buffer(0)
+                    data = callback frame.data
+                    if data? or data == null
+                        return data
+                    else
+                        return frame.data
                 else
-                    frame.data
-            else
-                frame.data
-        return this
+                    return frame.data
+
+        if _callback?
+            wrapper(_callback)
+            return this
+        else
+            return wrapper
 
     ##
     # Do glitch with index.
-    glitch_with_index: (target = 'all', callback) ->
-        return null unless callback?
-        i = 0
-        @frames.each (frame) =>
-            if @valid_target target, frame
-                data = callback frame, i
-                i++
-                if data? or data == null
-                    data
+    glitch_with_index: (target = 'all', _callback) ->
+        if typeof target != 'string' and !_callback?
+            _callback = target
+            target = 'all'
+
+        wrapper = (callback) ->
+            i = 0
+            @frames.each (frame) =>
+                if @valid_target target, frame
+                    data = callback frame.data, i
+                    i++
+                    if data? or data == null
+                        data
+                    else
+                        frame.data
                 else
                     frame.data
-            else
-                frame.data
 
-        return this
+        if _callback?
+            wrapper(_callback)
+            return this
+        else
+            return wrapper
 
     ##
     # Mutates all (or in +range+) keyframes into deltaframes.
