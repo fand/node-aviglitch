@@ -101,7 +101,7 @@ class Base
             _callback = target
             target = 'all'
 
-        wrapper = (callback) ->
+        wrapper = (callback) =>
             i = 0
             @frames.each (frame) =>
                 if @valid_target target, frame

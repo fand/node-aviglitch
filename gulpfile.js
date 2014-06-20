@@ -12,7 +12,7 @@ gulp.task('coffee', function () {
 
 gulp.task('test', function () {
   require('coffee-script/register');
-  return gulp.src('test/*.coffee')
+  gulp.src('test/*.coffee')
     .pipe(plumber())
     .pipe(mocha({
       ui: 'bdd',
