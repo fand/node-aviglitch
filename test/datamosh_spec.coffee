@@ -22,7 +22,7 @@ describe 'datamosh cli', ->
         fs.mkdirSync TMP_DIR unless fs.existsSync TMP_DIR
         @in = path.join FILES_DIR, 'sample.avi'
         @out = path.join OUTPUT_DIR, 'out.avi'
-        datamosh = path.resolve __dirname, '..', 'bin/datamosh'
+        datamosh = path.resolve __dirname, '..', 'bin/datamosh.js'
 
     beforeEach (done) ->
         a = AviGlitch.open @in
@@ -47,7 +47,7 @@ describe 'datamosh cli', ->
             done()
 
     it 'should work correctly without options', (done) ->
-        d1  = spawn('coffee', ['bin/datamosh', @in, '-o', @out])
+        d1  = spawn('node', ['bin/datamosh.js', @in, '-o', @out])
         d1.on 'exit', =>
             o = AviGlitch.open @out
             assert.equal o.frames.length(), @total
@@ -58,7 +58,7 @@ describe 'datamosh cli', ->
             done()
 
     it 'should work correctly w/ --all', (done) ->
-        d2  = spawn('coffee', ['bin/datamosh', @in, '-o', @out, '-a'])
+        d2  = spawn('node', ['bin/datamosh.js', @in, '-o', @out, '-a'])
         d2.stderr.pipe process.stderr
         d2.on 'exit', =>
             o = AviGlitch.open @out
@@ -70,7 +70,7 @@ describe 'datamosh cli', ->
             done()
 
     it 'should concat frames w/ multiple input files', (done) ->
-        d3  = spawn('coffee', ['bin/datamosh', '-o', @out, @in, @in, @in])
+        d3  = spawn('node', ['bin/datamosh.js', '-o', @out, @in, @in, @in])
         d3.stderr.pipe process.stderr
         d3.on 'exit', =>
             o = AviGlitch.open @out
@@ -81,7 +81,7 @@ describe 'datamosh cli', ->
             done()
 
     it 'should not glitch the video w/ --fake', (done) ->
-        d4  = spawn('coffee', ['bin/datamosh', '-o', @out, @in, '--fake'])
+        d4  = spawn('node', ['bin/datamosh.js', '-o', @out, @in, '--fake'])
         d4.stderr.pipe process.stderr
         d4.on 'exit', =>
             o = AviGlitch.open @out
