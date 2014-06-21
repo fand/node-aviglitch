@@ -1,5 +1,9 @@
 # AviGlitch
+
 [![Build Status](https://travis-ci.org/fand/node-aviglitch.svg?branch=master)](https://travis-ci.org/fand/node-aviglitch)
+[![Coverage Status](https://coveralls.io/repos/fand/node-aviglitch/badge.png?branch=coveralls)](https://coveralls.io/r/fand/node-aviglitch?branch=coveralls)
+
+[![NPM](https://nodei.co/npm/aviglitch.png?downloads=true&stars=true)](https://nodei.co/npm/aviglitch/)
 
 A fork of ruby [AviGlitch](http://github.com/ucnv/aviglitch) gem by ucnv.
 
@@ -27,5 +31,5 @@ It creates the keyframes removed video.
 ## Installation
 
 ```sh
-  npm install -g aviglitch
+  $ npm install -g aviglitch
 ```

@@ -257,18 +257,6 @@ describe 'Frames', ->
         a.output @out
         assert Base.surely_formatted(@out, true)
 
-    it 'can add a frame at last using <<', ->
-        a = AviGlitch.open @in
-        s = a.frames.length()
-        b = a.frames.at(10)
-
-        x = a.frames.push b
-        assert.equal a.frames.length(), s + 1
-        assert.equal x, a.frames
-
-        a.output @out
-        assert Base.surely_formatted(@out, true)
-
     it 'can delete all frames using clear', (done) ->
         a = AviGlitch.open @in
         a.frames.clear()
