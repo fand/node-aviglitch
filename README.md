@@ -31,5 +31,5 @@ It creates the keyframes removed video.
 ## Installation
 
 ```sh
-  npm install -g aviglitch
+  $ npm install -g aviglitch
 ```
