@@ -3,36 +3,45 @@
   "version": "0.0.1",
   "description": "A node.js porting of aviglitch rubygem by ucnv.",
   "main": "lib/aviglitch.js",
-  "dependencies": {
-    "commander": "^2.2.0",
-    "fs-extra": "^0.9.1",
-    "optimist": "^0.6.1"
-  },
-  "devDependencies": {
-    "chai": "^1.9.1",
-    "coffee-script": "^1.7.1",
-    "gulp": "^3.8.0",
-    "gulp-coffee": "^2.0.1",
-    "gulp-mocha": "^0.4.1",
-    "gulp-plumber": "^0.6.3",
-    "mocha": "^1.20.1"
-  },
   "scripts": {
     "test": "node_modules/.bin/gulp test",
-    "prepublish": "node_modules/.bin/gulp coffee"
+    "prepublish": "node_modules/.bin/gulp coffee",
+    "coverage": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha",
+    "travis": "npm run coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "bin": {
     "datamosh": "./bin/datamosh.js"
   },
-  "author": "Jun Fan <fand@kde.cs.tsukuba.ac.jp> (http://gmork.in/)",
-  "license": "MIT",
   "directories": {
     "test": "test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/fand/node-aviglitch.git"
   },
   "keywords": [
     "avi",
     "video",
     "glitch",
     "datamosh"
-  ]
+  ],
+  "author": "Jun Fan <fand@kde.cs.tsukuba.ac.jp> (http://gmork.in/)",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^2.2.0",
+    "fs-extra": "^0.9.1",
+    "optimist": "^0.6.1"
+  },
+  "devDependencies": {
+    "coffee-script": "^1.7.1",
+    "gulp": "^3.8.0",
+    "gulp-coffee": "^2.0.1",
+    "gulp-mocha": "^0.4.1",
+    "gulp-plumber": "^0.6.3",
+    "mocha": "^1.20.1",
+    "chai": "^1.9.1",
+    "coveralls": "^2.10.0",
+    "istanbul": "^0.2.11",
+    "mocha-lcov-reporter": "0.0.1"
+  }
 }
