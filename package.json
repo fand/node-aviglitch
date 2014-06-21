@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node_modules/.bin/gulp test",
     "prepublish": "node_modules/.bin/gulp coffee",
-    "coverage": "node_modules/.bin/gulp coverage"
+    "coverage": "node_modules/.bin/gulp coverage",
     "travis": "npm run coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "bin": {
