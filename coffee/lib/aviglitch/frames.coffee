@@ -399,7 +399,7 @@ class Frames
         m = @meta[0]
         io.seek @pos_of_movi + m.offset
         unless io.read(4, 'a') == m.id
-            x.offset -= @pos_of_movi for x in @meta.each
+            x.offset -= @pos_of_movi for x in @meta
         io.seek pos
 
     equal: (that) ->
