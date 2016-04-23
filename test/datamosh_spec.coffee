@@ -48,6 +48,7 @@ describe 'datamosh cli', ->
 
     it 'should work correctly without options', (done) ->
         d1  = spawn('node', ['bin/datamosh.js', @in, '-o', @out])
+        d1.stderr.pipe process.stderr
         d1.on 'exit', =>
             o = AviGlitch.open @out
             assert.equal o.frames.length(), @total

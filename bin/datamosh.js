@@ -3,12 +3,12 @@
 var fs   = require('fs');
 var path = require('path');
 
-var AviGlitch = require('..');
-
+var AviGlitch = require('../lib/aviglitch');
+console.log('>>>>>>>>>>>>>>>>>>');
 var output = 'out.avi';
 var all    = false;
 var fake   = false;
-
+console.log('??????????????????');
 // Parse options.
 var command = require('commander');
 command
@@ -34,7 +34,7 @@ command
       fake = true;
     })
   .parse(process.argv);
-
+console.log('!!!!!!!!!!!!!!!!');
 // Check the input files.
 var input = command.args;
 if (input.length < 1) {
@@ -49,11 +49,11 @@ for (var i = 0; i < input.length; i++) {
   }
 }
 
-
+console.log('@@@@@@@@@@@@@@@@@');
 // Open the first input file.
 var a = AviGlitch.open(input.shift());
 
-
+console.log('######################');
 // Glitch the frames.
 if (!fake) {
   var frames = 0;
@@ -66,7 +66,7 @@ if (!fake) {
     }
   });
 }
-
+console.log('$$$$$$$$$$$$$$$');
 
 // Avoid glitching the first keyframe.
 if (!(all || fake)) {
@@ -78,7 +78,7 @@ if (!(all || fake)) {
 } else {
   a.mutate_keyframes_into_deltaframes();
 }
-
+console.log('&&&&&&&&&&&&&&&&');
 
 // Process the rest of input files.
 for (i = 0; i < input.length; i++) {
@@ -92,7 +92,7 @@ for (i = 0; i < input.length; i++) {
   b.mutate_keyframes_into_deltaframes();
   a.frames.concat(b.frames);
 }
-
+console.log('))))))))))))))))))))))))))))');
 
 // Output the result.
 var dst = path.resolve(__dirname, '..', output);
