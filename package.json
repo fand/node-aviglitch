@@ -4,10 +4,12 @@
   "description": "A node.js porting of aviglitch rubygem by ucnv.",
   "main": "lib/aviglitch.js",
   "scripts": {
-    "test": "node_modules/.bin/gulp test",
-    "prepublish": "node_modules/.bin/gulp coffee",
-    "coverage": "node_modules/.bin/gulp coverage",
-    "travis": "npm run coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
+    "build": "coffee -o lib -c coffee/lib",
+    "cover": "node $(npm bin)/isparta cover --report lcov --report text --report html _mocha",
+    "lint": "eslint src test",
+    "prepublish": "npm run lint && npm run test",
+    "test": "mocha",
+    "travis": "npm run lint && npm run test && npm run cover"
   },
   "bin": {
     "datamosh": "./bin/datamosh.js"
@@ -33,9 +35,11 @@
     "optimist": "^0.6.1"
   },
   "devDependencies": {
+    "babel-eslint": "^6.0.3",
     "chai": "^1.9.1",
     "coffee-script": "^1.7.1",
     "coveralls": "^2.10.0",
+    "eslint": "^2.8.0",
     "gulp": "^3.8.0",
     "gulp-coffee": "^2.0.1",
     "gulp-istanbul": "^0.2.0",
