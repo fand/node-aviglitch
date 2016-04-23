@@ -1,18 +1,17 @@
-mocha = require 'mocha'
+mocha  = require 'mocha'
 assert = require('chai').assert
 
-fs = require 'fs'
+fs   = require 'fs'
 path = require 'path'
 
-FILES_DIR = path.join __dirname, 'files'
+FILES_DIR  = path.join __dirname, 'files'
 OUTPUT_DIR = path.join FILES_DIR, 'output'
-TMP_DIR = 'tmp'
+TMP_DIR    = 'tmp'
 
-AviGlitch = require 'lib/aviglitch'
-Base = require 'lib/aviglitch/base'
-Frames = require 'lib/aviglitch/frames'
-Frame = require 'lib/aviglitch/frame'
-
+AviGlitch = require '../lib/aviglitch'
+Base      = require '../lib/base'
+Frames    = require '../lib/frames'
+Frame     = require '../lib/frame'
 
 describe 'AviGlitch', ->
 

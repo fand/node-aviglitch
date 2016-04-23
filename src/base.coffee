@@ -1,5 +1,5 @@
-fs = require 'fs-extra'
-IO = require './io'
+fs     = require 'fs-extra'
+IO     = require './io'
 Frames = require './frames'
 
 # Base is the object that provides interfaces mainly used.

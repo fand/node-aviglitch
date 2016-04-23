@@ -1,9 +1,5 @@
 path = require 'path'
-
-Base   = require './aviglitch/base'
-Frame  = require './aviglitch/frame'
-Frames = require './aviglitch/frames'
-IO     = require './aviglitch/io'
+Base = require './base'
 
 # AviGlitch provides the ways to glitch AVI formatted video files.
 #
@@ -43,12 +39,4 @@ class AviGlitch
         else
             new Base path.resolve(path_or_frames), BUFFER_SIZE
 
-
 module.exports = AviGlitch
-    # Base: Base
-    # Frame: Frame
-    # Frames: Frames
-    # IO: IO
-    # VERSION: 0.0.0
-    # BUFFER_SIZE = 2 ** 24
-    # open:

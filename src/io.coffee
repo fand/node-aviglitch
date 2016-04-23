@@ -1,4 +1,4 @@
-fs = require 'fs'
+fs   = require 'fs'
 path = require 'path'
 
 class IO

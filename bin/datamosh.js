@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-
 'use strict';
-var fs = require('fs');
+var fs   = require('fs');
 var path = require('path');
 
-var AviGlitch = require('../lib/aviglitch');
+var AviGlitch = require('..');
 
 var output = 'out.avi';
-var all = false;
-var fake = false;
-
+var all    = false;
+var fake   = false;
 
 // Parse options.
 var command = require('commander');
@@ -36,7 +34,6 @@ command
       fake = true;
     })
   .parse(process.argv);
-
 
 // Check the input files.
 var input = command.args;

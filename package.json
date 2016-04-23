@@ -2,9 +2,9 @@
   "name": "aviglitch",
   "version": "0.0.1",
   "description": "A node.js porting of aviglitch rubygem by ucnv.",
-  "main": "lib/aviglitch.js",
+  "main": "index.js",
   "scripts": {
-    "build": "coffee -o lib -c coffee/lib",
+    "build": "coffee -o lib -c src",
     "cover": "node $(npm bin)/isparta cover --report lcov --report text --report html _mocha",
     "lint": "eslint src test",
     "prepublish": "npm run lint && npm run test",
