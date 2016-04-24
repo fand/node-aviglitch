@@ -169,7 +169,7 @@ describe 'AviGlitch', ->
         a.output @out
         a = AviGlitch.open @out
         a.frames.each (f) ->
-            assert.isFalse f.is_keyframe()
+            assert.isFalse f.is_keyframe
 
         a = AviGlitch.open @in
         a.mutate_keyframes_into_deltaframes [0..50]
@@ -177,26 +177,26 @@ describe 'AviGlitch', ->
         a = AviGlitch.open @out
         a.frames.each_with_index (f, i) ->
             if i <= 50
-                assert.isFalse f.is_keyframe()
+                assert.isFalse f.is_keyframe
 
     it 'should check if keyframes exist.', ->
         a = AviGlitch.open @in
-        assert a.has_keyframe()
+        assert a.has_keyframe
         a.glitch 'keyframe', (f) -> null
-        assert.isFalse a.has_keyframe()
+        assert.isFalse a.has_keyframe
 
     it 'should #remove_all_keyframes!', ->
         a = AviGlitch.open @in
-        assert a.has_keyframe()
+        assert a.has_keyframe
         a.remove_all_keyframes()
-        assert.isFalse a.has_keyframe()
+        assert.isFalse a.has_keyframe
 
     it 'should count same number of specific frames', ->
         a = AviGlitch.open @in
         dc1 = 0
         dc2 = 0
         a.frames.each (f) ->
-            dc1 += 1 if f.is_deltaframe()
+            dc1 += 1 if f.is_deltaframe
 
         a.glitch 'deltaframe', (d) ->
             dc2 += 1

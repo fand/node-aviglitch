@@ -60,7 +60,7 @@ describe 'Frames', ->
     it 'can manipulate each frame', (done) ->
         avi = AviGlitch.open @in
         avi.frames.each (f) ->
-            if f.is_keyframe()
+            if f.is_keyframe
                 f.data = new Buffer(f.data.toString('ascii').replace(/\d/, '0'))
 
         avi.output @out, true, =>
@@ -103,7 +103,7 @@ describe 'Frames', ->
         avi = AviGlitch.open @in
         c = 0
         avi.frames.each (f) ->
-            c += 1 if f.is_videoframe()
+            c += 1 if f.is_videoframe
         avi.output @out, false
         fs.readFile @out, (err, data) ->
             throw err if err
@@ -315,6 +315,7 @@ describe 'Frames', ->
         assert.deepEqual f.get_head_and_tail(40, -1), [40, f.length() - 1]
         assert.deepEqual f.get_head_and_tail(10), [10, f.length()]
         assert.deepEqual f.get_head_and_tail(60, -10), f.get_head_and_tail([60..-10])
+        assert.deepEqual f.get_head_and_tail(0, 0), [0, 0]
         assert.throws (->
             f.get_head_and_tail(100, 10)
         ), RangeError
@@ -433,7 +434,7 @@ describe 'Frames', ->
         a.output @out
         a = AviGlitch.open @out
         a.frames.each (f) ->
-            assert.isFalse f.is_keyframe()
+            assert.isFalse f.is_keyframe
 
         a = AviGlitch.open @in
         a.frames.mutate_keyframes_into_deltaframes [0..50]
@@ -442,14 +443,14 @@ describe 'Frames', ->
         a = AviGlitch.open @out
         a.frames.each_with_index (f, i) ->
             if i <= 50
-                assert.isFalse f.is_keyframe()
+                assert.isFalse f.is_keyframe
         a.close -> done()
 
     it 'should return function with #each', ->
         a = AviGlitch.open @in
         enumerate = (callback) -> a.frames.each callback
         enumerate (f, i) ->
-            if f.is_keyframe()
+            if f.is_keyframe
                 f.data = new Buffer(f.data.toString('ascii').replace /\d/, '')
 
         a.output @out
@@ -481,10 +482,10 @@ describe 'Frames', ->
 
         kc = dc = vc = ac = 0
         a.frames.each (x) ->
-            vc += if x.is_videoframe() then 1 else 0
-            kc += if x.is_keyframe() then 1 else 0
-            dc += if x.is_deltaframe() then 1 else 0
-            ac += if x.is_audioframe() then 1 else 0
+            vc += if x.is_videoframe then 1 else 0
+            kc += if x.is_keyframe then 1 else 0
+            dc += if x.is_deltaframe then 1 else 0
+            ac += if x.is_audioframe then 1 else 0
 
         a.closeSync()
 

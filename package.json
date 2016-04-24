@@ -31,7 +31,9 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^2.2.0",
+    "dedent": "^0.6.0",
     "fs-extra": "^0.9.1",
+    "lodash": "^4.11.1",
     "optimist": "^0.6.1"
   },
   "devDependencies": {

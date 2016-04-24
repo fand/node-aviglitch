@@ -171,15 +171,15 @@ class Base {
   /**
   * Check if it has keyframes.
   */
-  has_keyframe () {
+  get has_keyframe () {
     let res = false;
     this.frames.each((f) => {
-      res = res || f.is_keyframe();
+      res = res || f.is_keyframe;
     });
     return res;
   }
 
-  has_keyframes () { return this.has_keyframe(); }
+  get has_keyframes () { return this.has_keyframe; }
 
   /**
   * Removes all keyframes.
@@ -201,7 +201,7 @@ class Base {
   valid_target (target, frame) {
     if (target === 'all') { return true; }
     try {
-      return frame[`is_${target.toString().replace(/frames$/, 'frame')}`]();
+      return frame[`is_${target.toString().replace(/frames$/, 'frame')}`];
     }
     catch (e) {
       return false;

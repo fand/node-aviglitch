@@ -1,1 +1,1 @@
-module.exports = require './aviglitch'
+module.exports = require('./aviglitch');
