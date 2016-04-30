@@ -41,7 +41,6 @@ class IO
     move: (d) -> @pos += d
 
     read: (size, format) ->
-
         if @pos + size > @size()
             size = @size() - @pos
         if size <= 0

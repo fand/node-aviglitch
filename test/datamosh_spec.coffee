@@ -1,5 +1,5 @@
 mocha  = require 'mocha'
-assert = require('chai').assert
+assert = require 'assert';
 
 fs    = require 'fs'
 path  = require 'path'
@@ -48,13 +48,13 @@ describe 'datamosh cli', ->
 
     it 'should work correctly without options', (done) ->
         d1  = spawn('node', ['bin/datamosh.js', @in, '-o', @out])
+        d1.stdout.pipe process.stdout
         d1.stderr.pipe process.stderr
-        d1.on 'exit', =>
+        d1.on 'exit', () =>
             o = AviGlitch.open @out
-            assert.equal o.frames.length(), @total
-            console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+            assert.equal(o.frames.length(), @total)
             assert o.frames.first().is_keyframe
-            # assert o.has_keyframe
+            assert o.has_keyframe
             o.close()
             assert Base.surely_formatted?(@out, true)
             done()
@@ -65,8 +65,8 @@ describe 'datamosh cli', ->
         d2.on 'exit', =>
             o = AviGlitch.open @out
             assert.equal o.frames.length(), @total
-            assert.isFalse o.frames.first().is_keyframe
-            assert.isFalse o.has_keyframe()
+            assert ! o.frames.first().is_keyframe
+            assert ! o.has_keyframe
             o.close()
             assert Base.surely_formatted?(@out, true)
             done()
@@ -87,6 +87,6 @@ describe 'datamosh cli', ->
         d4.stderr.pipe process.stderr
         d4.on 'exit', =>
             o = AviGlitch.open @out
-            assert.isFalse o.has_keyframe()
+            assert ! o.has_keyframe
             o.close()
             done()

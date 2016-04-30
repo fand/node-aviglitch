@@ -14,22 +14,26 @@ const SAFE_FRAMES_COUNT = 150000;
  * Frames provides the interface to access each frame
  * in the AVI file.
  * It is implemented as Enumerable. You can access this object
- * through AviGlitch#frames, for example:
+ * through AviGlitch.frames, for example:
  *
- *   avi = new AviGlitch '/path/to/your.avi'
- *   frames = avi.frames
- *   frames.each (frame) ->
- *       ## frame is a reference of an AviGlitch::Frame object
- *       frame.data = frame.data.replace(/\d/, '0')
+ * ```
+ * const avi = new AviGlitch('/path/to/your.avi');
+ * const frames = avi.frames;
+ * frames.each((frame) => {
+ *   // frame is a reference of an AviGlitch::Frame object
+ *   frame.data = frame.data.replace(/\d/, '0')
+ * }
+ * ```
  *
  * In the block passed into iteration method, the parameter is a reference
- * of AviGlitch::Frame object.
+ * of AviGlitch/Frame object.
  */
 class Frames {
 
-    /**
-     * Creates a new AviGlitch::Frames object.
-     */
+  /**
+   * Creates a new AviGlitch::Frames object.
+   * @param {IO} io
+   */
   constructor (io) {
     this.io = io;
     this.warn_if_frames_are_too_large = true;
@@ -49,7 +53,7 @@ class Frames {
 
     this.meta = [];
     let chunk_id = this.io.read(4, 'a');
-    while (chunk_id.length !== undefined && chunk_id.length > 0) {
+    while (chunk_id.length > 0) {
       if (this.io.pos >= s) { break; }
       this.meta.push({
         id     : chunk_id,
@@ -357,7 +361,7 @@ class Frames {
     if (!m) { return null; }
 
     this.io.seek(this.pos_of_movi + m.offset + 8);
-    console.log(m);
+
     const frame = new Frame(this.io.read(m.size), m.id, m.flag);
     this.io.seek(0);
     return frame;
@@ -431,9 +435,8 @@ class Frames {
    */
   mutate_keyframes_into_deltaframes (_range = null) {
     const range = _range || _.range(this.size());
-
     this.each_with_index((frame, i) => {
-      if (i in range && frame.is_keyframe) {
+      if (range.indexOf(i) !== -1 && frame.is_keyframe) {
         frame.flag = 0;
       }
     });
