@@ -12,24 +12,23 @@ AviGlitch destroys your AVI files.
 ## Usage
 
 ```javascript
-  var AviGlitch = require('aviglitch');
-
-  var avi = AviGlitch.open('/path/to/your.avi');
-  avi.glitch('keyframe', function(frame){
-    new Buffer(frame.toString('ascii').replace(/\d/, ''));
-  })
-  avi.output('/path/to/broken.avi');
+import AviGlitch from 'aviglitch';
+const avi = AviGlitch.open('/path/to/your.avi');
+avi.glitch('keyframe', (frame) => {
+  return new Buffer(frame.toString('ascii').replace(/\d/, ''));
+});
+avi.output('/path/to/broken.avi');
 ```
 
 This library also includes a command line tool named `datamosh`.
 It creates the keyframes removed video.
 
 ```sh
-  $ datamosh /path/to/your.avi -o /path/to/broken.avi
+$ datamosh /path/to/your.avi -o /path/to/broken.avi
 ```
 
 ## Installation
 
 ```sh
-  $ npm install -g aviglitch
+$ npm install -g aviglitch
 ```
