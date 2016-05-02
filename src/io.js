@@ -29,7 +29,7 @@ class IO {
 
 
   size ()  {
-    return fs.fstatSync(this.fd)["size"];
+    return fs.fstatSync(this.fd)['size'];
   }
 
   seek (pos) {

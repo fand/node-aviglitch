@@ -102,7 +102,8 @@ class Frames {
    * Returns the number of the specific +frame_type+.
    */
   size_of (frame_type) {
-    const detection = 'is_' + frame_type.toString().replace(/frames$/, "frame");
+    const suffix = frame_type.toString().replace(/frames$/, 'frame');
+    const detection = `is_${suffix}`;
     const filtered = this.meta.filter((m) => {
       const f = new Frame(new Buffer(0), m.id, m.flag);
       return f[detection];
@@ -314,7 +315,7 @@ class Frames {
    */
   splice (index, howmany) {
     const offset        = Array.isArray(index) ? 1 : 2;
-    const _replacements = [].slice.call(arguments, offset);
+    const _replacements = [...arguments].slice(offset);
     const replacements  = [];
 
     _replacements.forEach((r) => {
@@ -508,7 +509,7 @@ class Frames {
     const m0  = this.meta[0];
     io.seek(this.pos_of_movi + m0.offset);
     if (io.read(4, 'a') !== m0.id) {
-      this.meta.forEach(m => { m.offset -= this.pos_of_movi });
+      this.meta.forEach(m => { m.offset -= this.pos_of_movi; });
     }
     io.seek(pos);
   }
