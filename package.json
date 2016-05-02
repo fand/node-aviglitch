@@ -1,34 +1,14 @@
 {
   "name": "aviglitch",
-  "version": "0.0.1",
   "description": "A node.js porting of aviglitch rubygem by ucnv.",
-  "main": "index.js",
-  "scripts": {
-    "build": "coffee -o lib -c src && babel src --out-dir lib",
-    "cover": "node $(npm bin)/isparta cover --report lcov --report text --report html _mocha",
-    "lint": "eslint src test",
-    "prepublish": "npm run lint && npm run test",
-    "test": "mocha",
-    "travis": "npm run lint && npm run test && npm run cover"
-  },
+  "version": "0.2.0",
+  "author": "amagitakayosi",
   "bin": {
     "datamosh": "./bin/datamosh.js"
   },
-  "directories": {
-    "test": "test/"
+  "bugs": {
+    "url": "https://github.com/fand/node-aviglitch/issues"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/fand/node-aviglitch.git"
-  },
-  "keywords": [
-    "avi",
-    "video",
-    "glitch",
-    "datamosh"
-  ],
-  "author": "Jun Fan <fand@kde.cs.tsukuba.ac.jp> (http://gmork.in/)",
-  "license": "MIT",
   "dependencies": {
     "commander": "^2.2.0",
     "dedent": "^0.6.0",
@@ -48,5 +28,33 @@
     "istanbul": "^0.2.11",
     "mocha": "^1.20.1",
     "mocha-lcov-reporter": "0.0.1"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "index.js",
+    "lib",
+    "bin"
+  ],
+  "homepage": "https://github.com/fand/node-aviglitch",
+  "keywords": [
+    "avi",
+    "datamosh",
+    "glitch",
+    "video"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/fand/node-aviglitch.git"
+  },
+  "scripts": {
+    "build": "babel src --out-dir lib",
+    "cover": "node $(npm bin)/isparta cover --report lcov --report text --report html _mocha",
+    "lint": "eslint src test",
+    "prepublish": "npm run lint && npm run test",
+    "test": "mocha",
+    "travis": "npm run lint && npm run test && npm run cover"
   }
 }
