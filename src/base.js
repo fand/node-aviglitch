@@ -114,7 +114,7 @@ class Base {
     };
 
     if (_callback) {
-      wrapper(_callback)
+      wrapper(_callback);
       return this;
     }
     else {
@@ -135,7 +135,7 @@ class Base {
       let i = 0;
       return this.frames.each((frame) => {
         if (this.valid_target(target, frame)) {
-          let data = callback(frame.data, i);
+          const data = callback(frame.data, i);
           i++;
           if (data || data === null) {
             return data;
@@ -217,7 +217,7 @@ class Base {
   */
   static surely_formatted (file, debug = false) {
     let answer = true;
-    const is_io = !!file.is_io  // Probably IO.
+    const is_io = !!file.is_io;  // Probably IO.
     if (!is_io) {
       file = new IO(file, 'r');
     }

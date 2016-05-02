@@ -520,9 +520,6 @@ describe('Frames', () => {
 
     a.output(out);
     assert(Base.surely_formatted(out, true));
-
-    const in_size  = fs.statSync(src).size;
-    const out_size = fs.statSync(out).size;
     assert(fs.statSync(out).size < fs.statSync(src).size);
   });
 

@@ -39,7 +39,7 @@ describe('AviGlitch', () => {
   });
 
   it('should raise an error against unsupported files', () => {
-    assert.throws(() => { AviGlitch.open( __filename); });
+    assert.throws(() => { AviGlitch.open(__filename); });
   });
 
   it('should return AviGlitch::Base object through the method #open', () => {
@@ -160,7 +160,7 @@ describe('AviGlitch', () => {
       avi.glitch('keyframe', (d) => {
         d.data = new Buffer(d.toString('ascii').replace(/\d/, ''));
       });
-      avi.glitch('keyframe', d => null);
+      avi.glitch('keyframe', () => null);
       avi.glitch('audioframe', d => Buffer.concat([d, d]));
       avi.output(dst);
     });

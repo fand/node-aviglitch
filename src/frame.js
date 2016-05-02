@@ -1,6 +1,9 @@
-const AVIIF_LIST     = 0x00000001;
+/**
+ *  AVIIF_LIST     : 0x00000001
+ *  AVIIF_KEYFRAME : 0x00000010
+ *  AVIIF_NO_TIME  : 0x00000100
+ */
 const AVIIF_KEYFRAME = 0x00000010;
-const AVIIF_NO_TIME  = 0x00000100;
 
 /**
  * Frame is the struct of the frame data and meta-data.

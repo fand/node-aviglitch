@@ -54,6 +54,7 @@
     "cover": "node $(npm bin)/isparta cover --report lcov --report text --report html _mocha",
     "lint": "eslint src test",
     "prepublish": "npm run lint && npm run test",
+    "pretest": "npm run build",
     "test": "mocha",
     "travis": "npm run lint && npm run test && npm run cover"
   }
