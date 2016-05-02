@@ -1,4 +1,4 @@
 --ui bdd
 --reporter spec
 --timeout 10000
---compilers coffee:coffee-script/register
+--compilers js:babel-register
