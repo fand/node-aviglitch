@@ -1,7 +1,16 @@
 #!/usr/bin/env node
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
-const _    = require('lodash');
+const _ = require('lodash');
+
+// eslint-disable-next-line
+const logger = require('eazy-logger').Logger({
+  useLevelPrefixes: true,
+});
+process.on('uncaughtException', (error) => {
+  logger.error(error);
+  process.exit(-1);
+});
 
 const AviGlitch = require('../lib/aviglitch');
 
@@ -30,18 +39,28 @@ const all    = cli.flags.all;
 const fake   = cli.flags.fake;
 
 if (fake && all) {
-  throw new Error('The --fake option cannot use with -a/--all option.');
+  logger.error('--fake cannot be used with --all');
+  process.exit(-1);
 }
 
 // Check the input files.
 cli.input.forEach((file) => {
   if (!fs.existsSync(file) || fs.lstatSync(file).isDirectory()) {
-    throw new Error(`File not found: ${file}`);
+    logger.error(`File not found: ${file}`);
+    process.exit(-1);
   }
 });
 
 // Open the first input file.
-const a = AviGlitch.open(cli.input.shift());
+const a = (() => {
+  try {
+    return AviGlitch.open(cli.input.shift());
+  }
+  catch (e) {
+    logger.error(e);
+    process.exit(-1);
+  }
+})();
 
 // Glitch the frames.
 if (!fake) {
@@ -77,7 +96,9 @@ cli.input.forEach((file) => {
 
 // Output the result.
 var dst = path.resolve(process.cwd(), output);
-
+logger.info(`Writing to file: ${dst}`);
 a.output(dst, null, () => {
   a.closeSync();
+  logger.info('Complete!');
+  process.exit(0);
 });
