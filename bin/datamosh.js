@@ -1,47 +1,40 @@
 #!/usr/bin/env node
-'use strict';
 const fs   = require('fs');
 const path = require('path');
 const _    = require('lodash');
 
 const AviGlitch = require('../lib/aviglitch');
 
-let output = 'out.avi';
-let all    = false;
-let fake   = false;
-
 // Parse options.
-const command = require('commander');
-command
-  .usage('[options] <file ...>')
-  .version('0.0.0')
-  .option(
-    '-o, --output [OUTPUT]', 'output the video to OUTPUT (./out.avi by default)',
-    (val) => { output = val; }
-  )
-  .option(
-    '-a, --all', 'remove all keyframes (It remains a first keyframe by default)',
-    () => { all = true; }
-  )
-  .option(
-    '-f, --fake', 'remains all keyframes as full pixel included deltaframe',
-    () => {
-      if (all) {
-        console.error("The --fake option cannot use with -a/--all option.\n");
-        process.exit(-1);
-      }
-      fake = true;
-    }
-  )
-  .parse(process.argv);
+const meow = require('meow');
+const cli = meow(`
+	Usage
+	  $ datamosh <input>
+
+	Options
+	  --output, -o  Specify output path. (Default: out.avi)
+    --all, -a     Remove all keyframes. It remains a first keyframe by default.
+    --fake, -f    Remains all keyframes as full pixel included deltaframe.
+	Examples
+	  $ datamosh input.avi -o out.avi
+`, {
+  alias: {
+    a: 'all',
+    f: 'fake',
+    o: 'output',
+  },
+});
+
+const output = cli.flags.output || 'out.avi';
+const all    = cli.flags.all;
+const fake   = cli.flags.fake;
+
+if (fake && all) {
+  throw 'The --fake option cannot use with -a/--all option.';
+}
 
 // Check the input files.
-var input = command.args;
-if (input.length < 1) {
-  command.help();
-  process.exit();
-}
-input.forEach((file) => {
+cli.input.forEach((file) => {
   if (!fs.existsSync(file) || fs.lstatSync(file).isDirectory()) {
     console.error(`${file}: No such file.\n`);
     process.exit(1);
@@ -49,7 +42,7 @@ input.forEach((file) => {
 });
 
 // Open the first input file.
-const a = AviGlitch.open(input.shift());
+const a = AviGlitch.open(cli.input.shift());
 
 // Glitch the frames.
 if (!fake) {
@@ -74,7 +67,7 @@ else {
 }
 
 // Process the rest of input files.
-input.forEach((file) => {
+cli.input.forEach((file) => {
   const b = AviGlitch.open(file);
   if (!fake) {
     b.glitch('keyframe', () => new Buffer(0));
