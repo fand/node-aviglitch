@@ -5,7 +5,6 @@ import _      from 'lodash';
 
 const FILES_DIR  = path.join(__dirname, 'files');
 const OUTPUT_DIR = path.join(FILES_DIR, 'output');
-const TMP_DIR    = 'tmp';
 
 import AviGlitch from '../lib/aviglitch';
 import Base      from '../lib/base';
@@ -15,7 +14,6 @@ describe('AviGlitch', () => {
 
   before(() => {
     if (!fs.existsSync(OUTPUT_DIR)) { fs.mkdirSync(OUTPUT_DIR); }
-    if (!fs.existsSync(TMP_DIR)) { fs.mkdirSync(TMP_DIR); }
     src = path.join(FILES_DIR, 'sample.avi');
     dst = path.join(OUTPUT_DIR, 'out.avi');
   });
@@ -28,14 +26,8 @@ describe('AviGlitch', () => {
     });
   });
 
-  after((done) => {
+  after(() => {
     fs.rmdirSync(OUTPUT_DIR);
-    fs.readdir(TMP_DIR, (err, files) => {
-      if (err) { throw err; }
-      files.forEach(f => fs.unlinkSync(path.join(TMP_DIR, f)));
-      fs.rmdirSync(TMP_DIR);
-      done();
-    });
   });
 
   it('should raise an error against unsupported files', () => {
