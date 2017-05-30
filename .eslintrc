@@ -90,7 +90,7 @@
     "no-mixed-requires"   : [2, true],
     "no-new-require"      : 1,
     "no-path-concat"      : 1,
-    "no-process-exit"     : 1,
+    "no-process-exit"     : 0,
     "no-sync"             : 0,
 
     // Stylistic Issues
