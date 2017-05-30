@@ -30,14 +30,13 @@ const all    = cli.flags.all;
 const fake   = cli.flags.fake;
 
 if (fake && all) {
-  throw 'The --fake option cannot use with -a/--all option.';
+  throw new Error('The --fake option cannot use with -a/--all option.');
 }
 
 // Check the input files.
 cli.input.forEach((file) => {
   if (!fs.existsSync(file) || fs.lstatSync(file).isDirectory()) {
-    console.error(`${file}: No such file.\n`);
-    process.exit(1);
+    throw new Error(`File not found: ${file}`);
   }
 });
 
@@ -77,9 +76,8 @@ cli.input.forEach((file) => {
 });
 
 // Output the result.
-var dst = path.resolve(__dirname, '..', output);
+var dst = path.resolve(process.cwd(), output);
 
 a.output(dst, null, () => {
   a.closeSync();
-  return process.exit();
 });
