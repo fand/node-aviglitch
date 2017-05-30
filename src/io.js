@@ -118,7 +118,7 @@ class IO {
 IO.tmp_id = 0;
 IO.removeTmp = () => fs.rmdirSync('tmp');
 IO.temp = (flags, callback) => {
-  if (IO.has_tmp) {
+  if (!IO.has_tmp) {
     IO.has_tmp = true;
     if (!fs.existsSync('tmp')) {
       fs.mkdirSync('tmp');
