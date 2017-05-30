@@ -1,5 +1,6 @@
 import fs   from 'fs';
 import path from 'path';
+import tmp  from 'tmp';
 
 const read_formats = {
   V : (buf) => buf.readUInt32LE(0),
@@ -116,20 +117,19 @@ class IO {
 }
 
 IO.tmp_id = 0;
-IO.removeTmp = () => fs.rmdirSync('tmp');
+IO.removeTmp = () => IO.tmpdirObj.removeCallback();
 IO.temp = (flags, callback) => {
   if (!IO.has_tmp) {
     IO.has_tmp = true;
-    if (!fs.existsSync('tmp')) {
-      fs.mkdirSync('tmp');
-    }
+    IO.tmpdirObj = tmp.dirSync();
     process.removeAllListeners();
     // process.addListener 'exit', @removeTmp
     // process.addListener 'error', @removeTmp
   }
 
-  const tmppath = path.resolve('tmp', IO.tmp_id.toString());
+  const tmppath = path.resolve(IO.tmpdirObj.name, IO.tmp_id.toString());
   IO.tmp_id += 1;
+
   return new IO(tmppath, 'w+', 0, callback);
 };
 
