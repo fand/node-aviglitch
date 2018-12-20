@@ -1,13 +1,13 @@
-import assert from 'assert';
-import fs     from 'fs';
-import path   from 'path';
-import _      from 'lodash';
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
 
 const FILES_DIR  = path.join(__dirname, 'files');
 const OUTPUT_DIR = path.join(FILES_DIR, 'output');
 
-import AviGlitch from '../lib/aviglitch';
-import Base      from '../lib/base';
+const AviGlitch = require('../lib/aviglitch');
+const Base = require('../lib/base');
 
 describe('AviGlitch', () => {
   let src, dst;
