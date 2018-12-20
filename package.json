@@ -1,7 +1,7 @@
 {
   "name": "aviglitch",
   "description": "A node.js porting of aviglitch rubygem by ucnv.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "amagitakayosi",
   "bin": {
     "datamosh": "./bin/datamosh.js"
